@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>領息大地圖</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E131C; --panel:#161C27; --panel2:#1E2633; --line:#2A3344; --line2:#3A4456;
+  --ink:#E8ECF2; --ink2:#C9D1DE; --muted:#AEB7C6; --dim:#6F7A8C; --accent:#F5C542;
+  --font: Inter, 'Noto Sans TC', system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+button,input,select{font-family:inherit}
+a{color:var(--accent)}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:rgba(14,19,28,.92);backdrop-filter:blur(8px);border-bottom:1px solid #222B3A}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand b{font-size:15px}
+.brand span{font-size:12px;color:var(--muted)}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.seg button{min-height:36px;padding:0 14px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#0E131C}
+
+.stage{display:flex;justify-content:center;padding:28px 16px}
+/* ---------- APP 模式：手機框 ---------- */
+.mode-app .device{width:414px;padding:12px;border-radius:44px;background:#05070B;border:1px solid #2A3344;box-shadow:0 0 0 6px #10151E}
+.mode-app .app{width:390px;border-radius:34px;overflow:hidden;background:var(--bg)}
+.mode-app .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.mode-app .app-body{display:flex;flex-direction:column}
+/* ---------- WEB 模式 ---------- */
+.mode-web .device{width:100%;max-width:1280px}
+.mode-web .app{width:100%;background:transparent}
+.mode-web .app-body{display:grid;grid-template-columns:360px minmax(0,1fr);grid-template-areas:"select cards" "result cards";gap:16px;align-items:start;padding:0 0 16px}
+.mode-web #selectPanel{grid-area:select}
+.mode-web #cardsPanel{grid-area:cards}
+.mode-web #resultPanel{grid-area:result}
+.mode-web .panel{border:1px solid var(--line);border-radius:16px;background:#121823}
+.mode-web .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mode-web .apphead{border-radius:16px 16px 0 0}
+@media (max-width:1100px){.mode-web .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:820px){
+  .mode-web .app-body{grid-template-columns:1fr;grid-template-areas:"select" "cards" "result"}
+}
+@media (max-width:480px){
+  .stage{padding:0}
+  .mode-app .device{width:100%;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent}
+  .mode-app .app{width:100%;border-radius:0}
+  .mode-web .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+.apphead{display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 8px;border-bottom:1px solid #222B3A}
+.apphead .t{font-size:18px;font-weight:700}
+.iconbtn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;background:transparent;color:var(--ink);cursor:pointer}
+.textbtn{min-height:44px;padding:0 8px;border:0;background:transparent;color:var(--accent);font-size:14px;cursor:pointer}
+.mode-web .apphead-wrap{display:none}
+
+.panel{padding:14px 12px}
+.sec-title{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 10px}
+.sec-title h2{margin:0;font-size:15px}
+.sec-title span{font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink2);font-size:13px;font-weight:700;cursor:pointer}
+.chip small{font-weight:500;font-size:11px;color:var(--muted)}
+.chip.on{color:var(--c);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.chip.add{border-style:dashed;color:var(--accent);border-color:#6b5a22;background:transparent}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.field label{font-size:12px;color:var(--muted)}
+.input{height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:15px}
+.input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;min-height:44px}
+.row .lbl{display:flex;flex-direction:column;gap:2px}
+.row .lbl b{font-size:14px}
+.row .lbl span{font-size:12px;color:var(--muted)}
+.switch{position:relative;width:52px;height:30px;border-radius:15px;border:0;background:var(--line2);cursor:pointer;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;transition:left .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{left:25px}
+.note{font-size:12px;line-height:1.6;color:var(--muted);margin:10px 0 0}
+
+/* custom form */
+.custom{margin-top:12px;padding:12px;border-radius:12px;border:1px dashed var(--line2);background:#121823}
+.custom[hidden]{display:none}
+.custom h3{margin:0 0 4px;font-size:14px}
+.cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cgrid .field{margin-top:8px}
+.evtable{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+.evtable th{color:var(--muted);font-weight:500;text-align:left;padding:4px 2px}
+.evtable td{padding:3px 2px}
+.evtable input{width:100%;height:36px;padding:0 6px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:12px}
+.btnrow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#0E131C}
+.err{color:#FF9B8A;font-size:12px;margin-top:8px}
+
+/* cards */
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin-bottom:4px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;border:1px solid var(--ink2);margin-right:6px;vertical-align:-1px}
+.legend i.s{background:rgba(201,209,222,.25)}
+.legend i.d{border-style:dashed}
+.grid{display:grid;gap:8px;margin-top:10px}
+.card{display:flex;flex-direction:column;gap:8px;padding:8px;border-radius:10px;background:var(--panel);border:1px solid var(--line);min-width:0}
+.card .mh{display:flex;align-items:center;justify-content:space-between}
+.card .mh b{font-size:16px}
+.badge{font-size:11px;font-weight:700;color:#0E131C;background:var(--accent);border-radius:4px;padding:1px 5px}
+.rowlbl{font-size:11px;color:var(--muted)}
+.ln{display:flex;justify-content:space-between;align-items:center;gap:4px;min-height:24px;padding:0 6px;border-radius:6px;border:1px solid var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);font-size:11px}
+.ln b{font-size:12px;color:var(--c)}
+.ln span{color:var(--ink)}
+.ln.re{border-color:var(--line2);background:transparent}
+.ln.est{border-style:dashed;background:transparent}
+.ln.re.est{border-color:var(--line2)}
+.dash{font-size:13px;color:var(--dim);min-height:24px;display:flex;align-items:center}
+.plain{font-size:11.5px;color:var(--muted);min-height:24px;display:flex;align-items:center;line-height:1.4}
+.empty{padding:32px 12px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
+
+/* result */
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kpi{display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:10px;background:var(--panel2)}
+.kpi span{font-size:13px;color:var(--muted)}
+.kpi b{font-size:26px}
+.kpi small{font-size:13px;color:#D5DBE5}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:12px;background:var(--panel2)}
+.split{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:6px;flex-wrap:wrap}
+.rtable{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
+.rtable th{color:#8A94A6;font-weight:500;text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+.rtable td{padding:6px 4px;border-bottom:1px solid #222B3A}
+.rtable td.r,.rtable th.r{text-align:right}
+.savebtn{width:100%;height:52px;margin-top:14px;border:0;border-radius:12px;background:var(--accent);color:#0E131C;font-size:17px;font-weight:700;cursor:pointer}
+
+/* explain */
+.explain{max-width:980px;margin:0 auto;padding:8px 20px 80px}
+.explain h2{font-size:24px;margin:36px 0 8px}
+.explain h3{font-size:17px;margin:28px 0 8px}
+.explain p,.explain li{font-size:15px;line-height:1.75;color:#D5DBE5}
+.explain .lead{font-size:16px;color:var(--ink)}
+.formula{margin:10px 0;padding:14px 16px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;line-height:1.8;color:var(--ink);overflow-x:auto;white-space:pre}
+.formula em{font-style:normal;color:var(--accent)}
+.ex{font-size:14px;color:var(--muted);margin:4px 0 0}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:10px 0}
+table.doc{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+table.doc th{background:var(--panel);color:var(--muted);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.doc td{padding:8px 10px;border-bottom:1px solid #222B3A;vertical-align:top;color:#D5DBE5}
+table.doc tr:last-child td{border-bottom:0}
+table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps>li{position:relative;padding-left:40px;margin:14px 0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:14px;background:var(--accent);color:#0E131C;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.toc a{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line2);color:var(--ink2);text-decoration:none;font-size:13px}
+.disclaimer{margin-top:32px;padding:14px 16px;border-radius:12px;border:1px solid var(--line);font-size:13px;color:var(--muted);line-height:1.7}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);max-width:340px;padding:14px 16px;border-radius:12px;background:#2A3344;color:var(--ink);font-size:15px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:50}
+.toast.show{opacity:1}
+
+.results{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:320px;overflow:auto}
+.res{display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:8px;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:13px;text-align:left;cursor:pointer}
+.res b{color:var(--accent)}
+.res small{color:var(--muted);font-size:11px}
+.res[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.quick{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:12px;color:var(--muted)}
+.quick span{display:flex;flex-wrap:wrap;gap:6px}
+.qbtn{min-height:36px;padding:0 10px;border-radius:18px;border:1px solid var(--line2);background:transparent;color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer}
+.qbtn:disabled{opacity:.35;cursor:default}
+.ratio-head{display:flex;align-items:baseline;justify-content:space-between}
+.ratio-head b{font-size:20px;color:var(--accent)}
+.ratio input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:44px;margin:0;background:transparent;cursor:pointer;--p:100%}
+.ratio input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(to right,var(--accent) var(--p),var(--line2) var(--p))}
+.ratio input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:var(--line2)}
+.ratio input[type=range]::-moz-range-progress{height:8px;border-radius:4px;background:var(--accent)}
+.ratio input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:14px;background:#fff;border:3px solid var(--accent)}
+.ratio input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:14px;background:#fff;border:3px solid var(--accent)}
+.ratio input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.ratio-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:-6px}
+.grid.collapsed .card:nth-child(n+4){display:none}
+.mode-web .grid.collapsed{grid-template-columns:repeat(3,minmax(0,1fr))}
+.morebtn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;margin-top:10px;border-radius:10px;border:1px solid var(--line2);background:transparent;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer}
+.morebtn[hidden]{display:none}
+.morebtn::after{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg)}
+.morebtn[aria-expanded="true"]::after{transform:translateY(2px) rotate(-135deg)}
+#cardsPanel{scroll-margin-top:72px}
+.sumline{margin:2px 0 0;font-size:12px;line-height:1.5;color:var(--muted)}
+.sumline b{color:var(--ink);font-weight:600}
+.sumline .nw{white-space:nowrap}
+.sumline .est{border-bottom:1px dashed currentColor}
+</style>
+<meta name="theme-color" content="#0E131C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="領息大地圖">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+
+<main id="root" class="mode-app">
+  <section class="stage">
+    <div class="device">
+      <div class="app">
+        <div class="apphead-wrap">
+          <div class="apphead">
+            <button class="iconbtn" type="button" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <div class="t">領息大地圖</div>
+            <a class="textbtn" href="#how" style="display:inline-flex;align-items:center;text-decoration:none">計算說明</a>
+          </div>
+        </div>
+        <div class="app-body">
+          <section id="selectPanel" class="panel">
+            <div class="sec-title"><h2>選擇標的</h2><span>已選 <b id="selCount" style="color:var(--accent)">0</b> 檔</span></div>
+            <div class="chips" id="selChips"></div>
+            <div class="field">
+              <label for="search">搜尋代號或名稱（上市／上櫃 ETF）</label>
+              <input class="input" id="search" placeholder="例：00919、高股息" autocomplete="off">
+            </div>
+            <div id="results" class="results" role="listbox" aria-label="搜尋結果"></div>
+            <div class="quick"><span>常用：</span><span id="quick"></span></div>
+            <div class="field"><label for="invest">年初投入金額（平均分配到各檔）</label><input class="input" id="invest" inputmode="numeric" value="300,000"></div>
+            <div class="field ratio">
+              <div class="ratio-head"><label for="ratio">股息再投入比例</label><b id="ratioVal">100%</b></div>
+              <input type="range" id="ratio" min="50" max="100" step="5" value="100" aria-describedby="ratioHint">
+              <div class="ratio-scale" aria-hidden="true"><span>50%</span><span>75%</span><span>100%</span></div>
+              <span class="note" id="ratioHint" style="margin:0">上月股息全部再投入本月除息的標的</span>
+            </div>
+          </section>
+
+          <section id="resultPanel" class="panel">
+            <div class="sec-title"><h2>本年迄今表現</h2><span id="baseLabel2"></span></div>
+            <div id="result"></div>
+          </section>
+
+          <section id="cardsPanel" class="panel">
+            <div class="sec-title"><h2 id="yearTitle">年度配置</h2><span id="baseLabel"></span></div>
+            <div class="legend"><span><i class="s"></i>已發生</span><span><i class="d"></i>尚未發生／待公告</span></div>
+            <div class="grid collapsed" id="grid"><div class="empty" style="grid-column:1/-1">資料載入中…</div></div>
+            <button type="button" class="morebtn" id="moreBtn" aria-controls="grid" aria-expanded="false" hidden>看全部 12 個月</button>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <article class="explain" id="how">
+    <h2>計算說明</h2>
+    <p class="lead">年初以第一個交易日收盤價，把投入金額平均買進所選 ETF；之後每個月把上個月參與除息拿到的股息，依你設定的比例（50%～100%）平均再投入本月每一次除息，其餘入袋；算到資料庫裡最近一個交易日。不計交易成本與稅金，不年化。</p>
+    <h3>公式</h3>
+    <div class="formula">年初單位數 U = (年初投入 <em>I</em> ÷ 檔數 <em>n</em>) ÷ 年初收盤價 <em>P0</em>
+股息 D = 除息當下單位數 × 每單位配息
+再投入比例 <em>r</em>（50%～100%）：上月股息 × (1 − r) 入袋，× r 留作再投入
+本月可再投入 R = 上月除息股息合計 × r + 前期保留；每次除息分到 A = R ÷ 本月除息次數
+新增單位 ΔU = A ÷ 再投入價 <em>Pr</em>（該檔除息前一交易日收盤）
+市值 MV = Σ 單位數 × 最新收盤價 <em>Pn</em>
+殖利率 = ΣD ÷ I
+已入袋 C = Σ D × (1 − r)
+待再投入 W = ΣD − 已再投入 − C
+報酬率 = (MV + 已入袋 C + 待再投入 W − I) ÷ I</div>
+    <ul>
+      <li>參與除息即視為確定領得到，不看實際發放日：某月除息的股息，一律在下個月拿來再投入，卡片的「領息」也顯示在下個月。實際入帳日寫在計算明細。</li>
+      <li>本月每一次除息各算一份；同一檔一個月除息兩次就分兩份，各自在該次除息前投入。</li>
+      <li>本月沒有除息標的：再投入的部分保留到下一個有除息的月份。最後買進日還沒到的再投入、12 月除息的股息，列為待再投入 W。</li>
+      <li>只計除息日晚於年初買進日、且不晚於計算日的配息。今年才上市、沒有年初收盤價的 ETF 暫時不能選。</li>
+      <li>月配型 ETF：雪鴞股利表每年只列 4 次配息，其餘月份由「未還原收盤價 ÷ 還原收盤價」的變化推算除息日與配息金額（精確到約 0.01 元）；入帳日依過去平均天數估算，只顯示在明細，不影響計算。</li>
+    </ul>
+    <h3>本次計算明細</h3>
+    <div class="tbl-wrap"><table class="doc" id="traceTable"><thead><tr><th>日期</th><th>動作</th><th>標的</th><th>算式</th><th>結果</th></tr></thead><tbody></tbody></table></div>
+    <div id="traceSum"></div>
+    <h3>資料來源</h3>
+    <p>收盤價、ETF 清單與配息資料（除息日、每單位配息、發放日）皆來自雪鴞 API，涵蓋上市與上櫃 ETF；再投入價取除息日前最後一個交易日的收盤價。資料每個交易日更新，計算至最近一個已收盤的交易日。</p>
+    <div class="disclaimer">本頁為模擬試算與 APP 設計參考，不構成投資建議。歷史配息與報酬不代表未來表現；實際配息以投信公告為準。</div>
+  </article>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ===== 模擬核心（同時內嵌於網頁）=====
+let START = '', BASE = '';
+const mon = d => parseInt(d.slice(5, 7), 10);
+const yr = d => parseInt(d.slice(0, 4), 10);
+const md = d => `${mon(d)}/${parseInt(d.slice(8), 10)}`;
+
+function simulate(lib, sel, invest, ratio) {
+  ratio = Math.min(1, Math.max(0.5, Number(ratio) || 1));
+  const keepPct = Math.round((1 - ratio) * 100);
+  const n = sel.length;
+  const units = {}, unitsStart = {}, divBy = {};
+  const log = [];
+  sel.forEach(c => {
+    const e = lib[c];
+    units[c] = (invest / n) / e.p0; unitsStart[c] = units[c]; divBy[c] = 0;
+    log.push({ date: md(START), act: '年初買進', code: c, formula: `${fmt0(invest / n)} ÷ ${e.p0}`, result: `${fmt2(units[c])} 單位` });
+  });
+  const evs = [];
+  sel.forEach(c => lib[c].events.forEach((e, i) => {
+    if (e.ex && e.ex <= START) return;
+    const Y = yr(START);
+    if (!e.ex) return;
+    const exMonth = yr(e.ex) === Y ? mon(e.ex) : 99;
+    const payMonth = e.pay ? (yr(e.pay) === Y ? mon(e.pay) : 13) : (exMonth === 12 ? 13 : null);
+    evs.push({ ...e, code: c, id: c + '#' + i, exMonth, payMonth, D: null });
+  }));
+  // 本月除息的每一次都算一份（同一檔除息兩次就兩份）
+  const targetsIn = m => evs.filter(e => e.exMonth === m).sort((a, b) => (a.ex || '9') < (b.ex || '9') ? -1 : 1);
+  const nextTargetMonth = m => { for (let k = m + 1; k <= 12; k++) if (targetsIn(k).length) return k; return null; };
+  let carry = 0, reinvested = 0, pocketed = 0;
+  const months = [];
+  for (let m = 1; m <= 12; m++) {
+    const card = { m, pay: [], re: [], ex: [], sum: { reinv: 0, pend: 0, keep: 0, carryOut: 0, carryTo: null, carriedIn: 0, pendingPay: false } };
+    // 1. 上月除息拿到的股息：不管實際發放日，本月即可運用
+    let pool = carry;
+    const carried = carry;
+    let pendingPay = false, payKeep = 0;
+    evs.filter(e => e.exMonth === m - 1).sort((a, b) => a.ex < b.ex ? -1 : 1).forEach(e => {
+      if (e.D != null) {
+        card.pay.push({ code: e.code, text: fmt0(e.D) });
+        const keep = e.D * (1 - ratio);
+        if (keep > 0.000001) { pocketed += keep; payKeep += keep; log.push({ date: md(e.ex), act: '入袋', code: e.code, formula: `${fmt2(e.D)} × ${keepPct}%`, result: fmt2(keep) }); }
+        pool += e.D * ratio;
+      } else { card.pay.push({ code: e.code, text: '預計', est: true }); pendingPay = true; }
+    });
+    // 2. 再投入：平均分給本月每一次除息
+    const targets = targetsIn(m);
+    if (pool > 0.000001) {
+      if (!targets.length) {
+        const nm = nextTargetMonth(m);
+        card.re.push({ kind: 'note', text: nm ? `保留 → ${nm} 月` : '保留（年底未再投入）' });
+        log.push({ date: `${m} 月`, act: '保留', code: '—', formula: '當月無除息標的', result: fmt2(pool) });
+        carry = pool; card.sum.carryOut = pool; card.sum.carryTo = nm;
+      } else {
+        card.sum.carriedIn = carried;
+        if (carried > 0) card.re.push({ kind: 'note', text: `含前期保留 ${fmt0(carried)}` });
+        const A = pool / targets.length;
+        targets.forEach(t => {
+          if (t.ex && t.lb && t.lb <= BASE && t.pr) {
+            const add = A / t.pr;
+            reinvested += A; card.sum.reinv += A;
+            t.addUnits = add;                                   // 到該次除息前才加進去（同月兩次除息時依日期先後）
+            card.re.push({ code: t.code, text: fmt0(A) + ' →' });
+            log.push({ date: md(t.lb), act: '再投入', code: t.code, formula: `${fmt2(A)} ÷ ${t.pr}`, result: `+${fmt2(add)} 單位` });
+          } else {
+            card.re.push({ code: t.code, text: fmt0(A) + ' →', est: true }); card.sum.pend += A;
+            log.push({ date: t.lb ? md(t.lb) : `${m} 月`, act: '待再投入', code: t.code, formula: '最後買進日未到', result: fmt2(A) });
+          }
+        });
+        carry = 0;
+      }
+    } else if (pendingPay && targets.length) {
+      targets.forEach(t => card.re.push({ code: t.code, text: '預計 →', est: true })); card.sum.pendingPay = true;
+    }
+    card.sum.keep = payKeep;
+    if (payKeep > 0.000001) card.re.push({ kind: 'note', text: `入袋 ${fmt0(payKeep)}（${keepPct}%）` });
+    if (!card.re.length && m === 1 && !card.pay.length) card.re.push({ kind: 'note', text: '年初已投入' });
+    // 3. 除息：依日期先後，每次用當下單位數計算
+    targets.forEach(e => {
+      if (e.addUnits) units[e.code] += e.addUnits;
+      if (e.ex && e.ex <= BASE && e.dps != null) {
+        e.D = units[e.code] * e.dps; divBy[e.code] += e.D;
+        card.ex.push({ code: e.code, text: md(e.ex) });
+        log.push({ date: md(e.ex), act: '除息', code: e.code, formula: `${fmt2(units[e.code])} × ${e.dps}`, result: `股息 ${fmt2(e.D)}（${e.pay ? md(e.pay) + ' 入帳' : '入帳日待公告'}）` });
+      } else {
+        card.ex.push({ code: e.code, text: e.ex ? md(e.ex) : '待公告', est: true });
+      }
+    });
+    months.push(card);
+  }
+  // 12 月除息的股息：入袋部分照比例計入，其餘列待再投入
+  evs.filter(e => e.D != null && e.exMonth === 12).forEach(e => { pocketed += e.D * (1 - ratio); });
+  const totalD = evs.reduce((s, e) => s + (e.D || 0), 0);
+  const W = totalD - reinvested - pocketed;
+  let MV = 0; const rows = [];
+  sel.forEach(c => { const mv = units[c] * lib[c].pn; MV += mv; rows.push({ code: c, u0: unitsStart[c], u1: units[c], mv, div: divBy[c] }); });
+  const lk = d => { const m1 = String(d).match(/^(\d+)\/(\d+)$/); if (m1) return +m1[1] * 100 + +m1[2]; const m2 = String(d).match(/^(\d+) 月$/); return m2 ? +m2[1] * 100 + 99 : 9999; };
+  log.sort((a, b) => lk(a.date) - lk(b.date));
+  const ret = (MV + pocketed + W - invest) / invest, yld = totalD / invest;
+  return { months, rows, MV, totalD, W, reinvested, pocketed, ratio, ret, yld, gain: MV + pocketed + W - invest, log };
+}
+function fmt0(x) { return Math.round(x).toLocaleString('en-US'); }
+function fmt2(x) { return x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+
+
+const PALETTE = ['#F5C542', '#3DD6C4', '#FF7A9A', '#7DB3FF', '#FFA24D', '#C3A2FF', '#8BE36A', '#FF8F6B', '#5FD0FF', '#E58BFF', '#D4C26A', '#9AA8FF'];
+const QUICK = ['0056', '00878', '00919', '0050', '00929', '00940', '00713', '006208'];
+let DB = null, lib = {}, sel = ['00919', '0056', '00878'], ratioPct = 100;
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2400); }
+function investValue() { const v = parseFloat(String($('invest').value).replace(/[^\d.]/g, '')); return isFinite(v) && v > 0 ? v : 0; }
+function colorOf(code) { const i = sel.indexOf(code); return PALETTE[i >= 0 ? i % PALETTE.length : 0]; }
+
+function buildLib(d) {
+  const out = {};
+  d.etfs.forEach(e => {
+    const p = d.prices[e.code] || {};
+    out[e.code] = { name: e.name, market: e.market || '', freq: e.freq || '', incomplete: !!e.incomplete, estimated: !!e.estimated, p0: p.p0 || null, pn: p.pn || null, pnDate: p.pnDate || '', events: d.events[e.code] || [] };
+  });
+  return out;
+}
+
+function addCode(code) {
+  const e = lib[code];
+  if (!e) return;
+  if (sel.includes(code)) return;
+  if (!e.p0) { toast(`${code} 今年才上市，沒有年初收盤價，暫時不能選。`); return; }
+  if (e.incomplete) { toast(`${code} 是月配型 ETF，配息資料尚未完整，暫時不能選。`); return; }
+  sel = [...sel, code];
+  $('search').value = ''; renderSearch(); update();
+}
+
+function renderSel() {
+  $('selCount').textContent = sel.length;
+  $('selChips').innerHTML = sel.map(c => `<button type="button" class="chip on" style="--c:${colorOf(c)}" data-rm="${esc(c)}" aria-label="移除 ${esc(c)}">${esc(c)}<small>${esc((lib[c] || {}).freq || '')}</small><span aria-hidden="true" style="margin-left:2px">✕</span></button>`).join('') || '<span class="note" style="margin:0">尚未選擇</span>';
+  $('selChips').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { sel = sel.filter(x => x !== b.dataset.rm); update(); });
+  $('quick').innerHTML = QUICK.filter(c => lib[c]).map(c => `<button type="button" class="qbtn" data-add="${c}" ${sel.includes(c) || !lib[c].p0 || lib[c].incomplete ? 'disabled' : ''}>${c}</button>`).join('');
+  $('quick').querySelectorAll('[data-add]').forEach(b => b.onclick = () => addCode(b.dataset.add));
+}
+
+function renderSearch() {
+  const q = $('search').value.trim().toLowerCase();
+  const box = $('results');
+  if (!q || !DB) { box.innerHTML = ''; return; }
+  const hits = Object.keys(lib).filter(c => c.toLowerCase().includes(q) || lib[c].name.toLowerCase().includes(q)).slice(0, 12);
+  box.innerHTML = hits.length ? hits.map(c => {
+    const e = lib[c], on = sel.includes(c), dis = !e.p0 || e.incomplete;
+    return `<button type="button" class="res" data-code="${esc(c)}" ${on || dis ? 'aria-disabled="true"' : ''}><b>${esc(c)}</b><span>${esc(e.name)}</span><small>${!e.p0 ? '今年上市，無年初價' : e.incomplete ? '月配資料待補' : on ? '已選' : esc([e.market, e.freq].filter(Boolean).join('・'))}</small></button>`;
+  }).join('') : '<div class="note">找不到符合的 ETF</div>';
+  box.querySelectorAll('[data-code]').forEach(b => b.onclick = () => addCode(b.dataset.code));
+}
+
+function lineHTML(it, kind) {
+  if (it.kind === 'note') return `<div class="plain">${esc(it.text)}</div>`;
+  const c = colorOf(it.code);
+  const cls = 'ln' + (kind === 're' ? ' re' : '') + (it.est ? ' est' : '');
+  if (kind === 're') return `<div class="${cls}" style="--c:${c}"><span>${esc(it.text)}</span><b>${esc(it.code)}</b></div>`;
+  return `<div class="${cls}" style="--c:${c}"><b>${esc(it.code)}</b><span>${esc(it.text)}</span></div>`;
+}
+
+function render(r) {
+  const grid = $('grid');
+  if (!sel.length || !r) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">還沒有選擇 ETF<br>搜尋或點選常用標的，系統會依除息日，自動排進 12 個月的卡片。</div>`;
+    $('result').innerHTML = `<p class="note">選擇標的後顯示。</p>`;
+    $('traceTable').querySelector('tbody').innerHTML = ''; $('traceSum').innerHTML = '';
+    return;
+  }
+  const nowM = mon(BASE);
+  grid.innerHTML = r.months.map(c => {
+    const row = (lbl, arr, kind) => `<div style="display:flex;flex-direction:column;gap:4px"><span class="rowlbl">${lbl}</span>${arr.length ? arr.map(x => lineHTML(x, kind)).join('') : '<span class="dash">—</span>'}</div>`;
+    const S = c.sum || {}, parts = [];
+    if (S.reinv > 0.5) parts.push(`再投入 <b>${fmt0(S.reinv)}</b> 元${S.carriedIn > 0.5 ? `（含前期保留 ${fmt0(S.carriedIn)}）` : ''}`);
+    if (S.pend > 0.5) parts.push(`<span class="est">待再投入 ${fmt0(S.pend)} 元（買進日未到）</span>`);
+    if (S.carryOut > 0.5) parts.push(S.carryTo ? `保留 ${fmt0(S.carryOut)} 元 → ${S.carryTo} 月` : `年底保留 ${fmt0(S.carryOut)} 元`);
+    if (S.keep > 0.5) parts.push(`入袋 <b>${fmt0(S.keep)}</b> 元`);
+    if (!parts.length && S.pendingPay) parts.push('<span class="est">預計再投入</span>');
+    if (!parts.length && c.m === 1 && !c.pay.length) parts.push('年初已投入');
+    const sumLine = parts.length ? `<p class="sumline">${parts.map((p, i) => `<span class="nw">${p}${i < parts.length - 1 ? '，' : ''}</span>`).join('')}</p>` : '';
+    return `<div class="card"><div class="mh"><b>${c.m} 月</b>${c.m === nowM ? '<span class="badge">本月</span>' : ''}</div>${row('領息', c.pay, 'pay')}<div style="display:flex;flex-direction:column;gap:4px">${row('除息', c.ex, 'ex')}${sumLine}</div></div>`;
+  }).join('');
+  const pctS = x => (x >= 0 ? '+' : '') + (x * 100).toFixed(2) + '%';
+  const I = investValue();
+  const capGain = r.MV - I - r.reinvested;
+  const wCap = r.gain > 0 ? Math.max(0, capGain) / (Math.max(0, capGain) + r.totalD) * 100 : 0;
+  $('result').innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><span>報酬率</span><b style="color:var(--accent)">${pctS(r.ret)}</b><small>${r.gain >= 0 ? '+' : '−'}$${fmt0(Math.abs(r.gain))}</small></div>
+      <div class="kpi"><span>殖利率</span><b>${(r.yld * 100).toFixed(2)}%</b><small>股息 $${fmt0(r.totalD)}</small></div>
+      <div class="kpi"><span>已入袋金額</span><b>$${fmt0(r.pocketed)}</b><small>${ratioPct === 100 ? '全部再投入' : `股息的 ${100 - ratioPct}%`}</small></div>
+      <div class="kpi"><span>目前市值</span><b>$${fmt0(r.MV)}</b><small>已再投入 $${fmt0(r.reinvested)}</small></div>
+    </div>
+    <div class="bar" aria-hidden="true"><div style="width:${wCap}%;background:#7DB3FF"></div><div style="width:${100 - wCap}%;background:var(--accent)"></div></div>
+    <div class="split"><span>價差 ${capGain >= 0 ? '+' : '−'}$${fmt0(Math.abs(capGain))}（${pctS(capGain / I)}）</span><span>股息 +$${fmt0(r.totalD)}（${pctS(r.yld)}）</span></div>
+    <table class="rtable"><thead><tr><th>標的</th><th>單位數（年初→目前）</th><th class="r">市值</th><th class="r">股息</th></tr></thead><tbody>
+      ${r.rows.map(x => `<tr><td><b style="color:${colorOf(x.code)}">${esc(x.code)}</b><br><span style="color:var(--muted);font-size:11px">${esc(lib[x.code].name)}</span></td><td>${fmt0(x.u0)} → ${fmt0(x.u1)}</td><td class="r">$${fmt0(x.mv)}</td><td class="r">$${fmt0(x.div)}</td></tr>`).join('')}
+      <tr><td colspan="2" style="color:var(--muted)">已入袋 C</td><td class="r">$${fmt0(r.pocketed)}</td><td></td></tr>
+      <tr><td colspan="2" style="color:var(--muted)">待再投入 W</td><td class="r">$${fmt0(r.W)}</td><td></td></tr>
+    </tbody></table>
+    <p class="note">殖利率＝今年已除息的股息合計 ÷ 年初投入。報酬率＝（目前市值＋已入袋＋待再投入股息－年初投入）÷ 年初投入；已再投入的股息含在市值內。價差＝市值－年初投入－已再投入股息。不計交易成本與稅金，未年化。</p>`;
+  $('traceTable').querySelector('tbody').innerHTML = r.log.map(l => `<tr><td>${esc(l.date)}</td><td>${esc(l.act)}</td><td>${esc(l.code)}</td><td class="num">${esc(l.formula)}</td><td class="num">${esc(l.result)}</td></tr>`).join('');
+  $('traceSum').innerHTML = `<div class="formula">MV = ${r.rows.map(x => `${fmt2(x.u1)} × ${lib[x.code].pn}`).join(' + ')} = ${fmt2(r.MV)}
+ΣD = ${fmt2(r.totalD)}　再投入比例 r = ${ratioPct}%
+已入袋 C = ${fmt2(r.totalD)} × ${100 - ratioPct}% = ${fmt2(r.pocketed)}　已再投入 = ${fmt2(r.reinvested)}　W = ${fmt2(r.totalD)} − ${fmt2(r.reinvested)} − ${fmt2(r.pocketed)} = ${fmt2(r.W)}
+殖利率 = ${fmt2(r.totalD)} ÷ ${fmt0(I)} = <em>${(r.yld * 100).toFixed(2)}%</em>
+報酬率 = (${fmt2(r.MV)} + ${fmt2(r.pocketed)} + ${fmt2(r.W)} − ${fmt0(I)}) ÷ ${fmt0(I)} = <em>${pctS(r.ret)}</em></div>`;
+}
+
+let cardsOpen = false;
+function syncMore(hasCards) {
+  $('grid').classList.toggle('collapsed', !cardsOpen);
+  const b = $('moreBtn');
+  b.hidden = !hasCards;
+  b.setAttribute('aria-expanded', cardsOpen);
+  b.textContent = cardsOpen ? '收合，只看前 3 個月' : '看全部 12 個月';
+}
+$('moreBtn').onclick = () => {
+  cardsOpen = !cardsOpen; syncMore(true);
+  if (!cardsOpen) $('cardsPanel').scrollIntoView({ block: 'start', behavior: 'smooth' });
+};
+
+function update() {
+  if (!DB) return;
+  renderSel();
+  const I = investValue();
+  const r = sel.length && I > 0 ? simulate(lib, sel, I, ratioPct / 100) : null;
+  render(r);
+  syncMore(!!r);
+}
+
+$('root').className = 'mode-app';   // 只提供 APP 畫面
+$('search').addEventListener('input', renderSearch);
+$('invest').addEventListener('input', update);
+$('invest').addEventListener('blur', () => { const v = investValue(); if (v) $('invest').value = fmt0(v); });
+function syncRatio() {
+  ratioPct = Number($('ratio').value) || 100;
+  $('ratioVal').textContent = ratioPct + '%';
+  $('ratioHint').textContent = ratioPct === 100 ? '上月股息全部再投入本月除息的標的' : `上月股息 ${ratioPct}% 再投入本月除息的標的，${100 - ratioPct}% 入袋`;
+  $('ratio').style.setProperty('--p', ((ratioPct - 50) * 2) + '%');
+}
+$('ratio').addEventListener('input', () => { syncRatio(); update(); });
+syncRatio();
+
+function onData(d) {
+  DB = d; START = d.start; BASE = d.base;
+  lib = buildLib(d);
+  sel = sel.filter(c => lib[c] && lib[c].p0 && !lib[c].incomplete);
+  const y = START.slice(0, 4);
+  $('yearTitle').textContent = `${y} 年度配置`;
+  $('baseLabel').textContent = `計算至 ${BASE.replace(/-/g, '/')}`;
+  $('baseLabel2').textContent = `截至 ${md(BASE)} 收盤`;
+  const nT = d.etfs.filter(e => e.market === '上市').length, nO = d.etfs.filter(e => e.market === '上櫃').length;
+  if ($('dataInfo')) $('dataInfo').textContent = `資料：雪鴞 API・ETF ${d.etfs.length} 檔${nT + nO ? `（上市 ${nT}／上櫃 ${nO}）` : ''}・年初 ${START}・最近交易日 ${BASE}`;
+  update();
+}
+function onFail(e) {
+  $('grid').innerHTML = `<div class="empty" style="grid-column:1/-1">讀取資料失敗：${esc(e && e.message ? e.message : e)}</div>`;
+  if ($('dataInfo')) $('dataInfo').textContent = '資料讀取失敗';
+}
+// ↓↓↓ 換成你的 Apps Script 網頁 /exec 網址（只改引號裡面）↓↓↓
+const DATA_URL = 'https://script.google.com/macros/s/請貼上你的部署ID/exec';
+fetch(DATA_URL + '?format=json', { cache: 'no-store' })
+  .then(r => r.json())
+  .then(d => (d && d.start && d.etfs) ? onData(d) : onFail('資料尚未上傳'))
+  .catch(err => onFail('連線失敗，請稍後再試'));
+</script>
+</body>
+</html>
