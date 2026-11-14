@@ -536,11 +536,22 @@ function onFail(e) {
   if ($('dataInfo')) $('dataInfo').textContent = '資料讀取失敗';
 }
 // ↓↓↓ 換成你的 Apps Script 網頁 /exec 網址（只改引號裡面）↓↓↓
-const DATA_URL = 'https://script.google.com/macros/s/請貼上你的部署ID/exec';
-fetch(DATA_URL + '?format=json', { cache: 'no-store' })
-  .then(r => r.json())
-  .then(d => (d && d.start && d.etfs) ? onData(d) : onFail('資料尚未上傳'))
-  .catch(err => onFail('連線失敗，請稍後再試'));
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbxj5wW6Ve2zNvp0SJS3zluGE_yd7WyNWP6HrPHGVwZDblQR0JSQPA9MPoZ9IDDvXd4F/exec';
+(function loadData() {
+  if (DATA_URL.indexOf('請貼上') >= 0) { onFail('尚未設定資料網址：請在 index.html 的 DATA_URL 貼上 Apps Script 的 /exec 網址'); return; }
+  if (/\/dev(\?|$)/.test(DATA_URL)) { onFail('資料網址是 /dev（測試網址，只有你登入才能用），請改用 /exec 網址'); return; }
+  fetch(DATA_URL + (DATA_URL.indexOf('?') >= 0 ? '&' : '?') + 'format=json', { cache: 'no-store' })
+    .then(r => r.text())
+    .then(t => {
+      const s = t.trim();
+      if (s.charAt(0) === '<') throw new Error('資料服務回傳的是網頁而不是資料：請確認 Apps Script 已「部署新版本」，且存取權為「所有人」');
+      const d = JSON.parse(s);
+      if (!d || !d.start || !d.etfs) throw new Error('資料服務沒有資料：請先執行雪鴞同步程式上傳');
+      onData(d);
+    })
+    .catch(err => onFail(err && err.message && err.message.indexOf('Failed to fetch') < 0 ? err.message
+      : '連不到資料服務：請確認 Apps Script 部署的存取權為「所有人」，並用無痕視窗打開「/exec?format=json」測試'));
+})();
 </script>
 </body>
 </html>
