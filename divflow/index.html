@@ -351,7 +351,7 @@ function boot() {
       Object.entries(st.value.sec || {}).forEach(([c, n]) => { sec[c] = [n, '個股']; });
       (st.value.ev || []).forEach(e => ev.push(e));
       updated = st.value.updated || '';
-    } else warn.push(st.reason ? st.reason.message : '個股資料讀取失敗');
+    } else warn.push(st.reason ? st.reason.message : '個股資料服務回傳空資料（' + JSON.stringify(st.value || {}).slice(0, 60) + '）');
     if (et.status === 'fulfilled' && et.value && et.value.etfs) {
       const d = et.value;
       d.etfs.forEach(x => { sec[x.code] = [x.name, 'ETF']; });
@@ -359,7 +359,7 @@ function boot() {
         if (x.ex) ev.push([c, x.ex, x.pay || '', +x.dps || 0, 0, (x.estPay || x.estDps) ? 1 : 0, '']);
       }));
       if (d.base && d.base > updated) updated = d.base;
-    } else warn.push(et.reason ? et.reason.message : 'ETF 資料讀取失敗');
+    } else warn.push(et.reason ? et.reason.message : 'ETF 資料服務回傳空資料（' + JSON.stringify(et.value || {}).slice(0, 60) + '），可能尚未上傳或部署版本不對');
     hideLoader();
     if (!ev.length) { showFail(warn.join('；') || '讀取資料失敗'); return; }
     DATA = { asof: TODAY, updated, sec, ev, warn };
