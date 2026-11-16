@@ -111,6 +111,9 @@ a{color:var(--accent)}
 .ln.re{border-color:var(--line2);background:transparent}
 .ln.est{border-style:dashed;background:transparent}
 .ln.re.est{border-color:var(--line2)}
+.ln.blank{justify-content:flex-start;border-style:dashed;background:transparent}
+.ln.blank b{opacity:.75}
+.card.future .mh b{color:var(--muted)}
 .dash{font-size:13px;color:var(--dim);min-height:24px;display:flex;align-items:center}
 .plain{font-size:11.5px;color:var(--muted);min-height:24px;display:flex;align-items:center;line-height:1.4}
 .empty{padding:32px 12px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
@@ -253,7 +256,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 
           <section id="cardsPanel" class="panel">
             <div class="sec-title"><h2 id="yearTitle">年度配置</h2><span id="baseLabel"></span></div>
-            <div class="legend"><span><i class="s"></i>已發生</span><span><i class="d"></i>尚未發生／待公告</span></div>
+            <div class="legend"><span><i class="s"></i>已發生</span><span><i class="d"></i>尚未發生（不顯示日期與金額）</span></div>
             <div class="grid collapsed" id="grid"><div class="empty" style="grid-column:1/-1">資料載入中…</div></div>
             <button type="button" class="morebtn" id="moreBtn" aria-controls="grid" aria-expanded="false" hidden>看全部 12 個月</button>
           </section>
@@ -475,6 +478,8 @@ function renderSearch() {
 function lineHTML(it, kind) {
   if (it.kind === 'note') return `<div class="plain">${esc(it.text)}</div>`;
   const c = colorOf(it.code);
+  // 尚未發生：只留代號與虛線外框，不顯示日期與金額
+  if (it.blank) return `<div class="ln blank${kind === 're' ? ' re' : ''}" style="--c:${c}"><b>${esc(it.code)}</b></div>`;
   const cls = 'ln' + (kind === 're' ? ' re' : '') + (it.est ? ' est' : '');
   if (kind === 're') return `<div class="${cls}" style="--c:${c}"><span>${esc(it.text)}</span><b>${esc(it.code)}</b></div>`;
   return `<div class="${cls}" style="--c:${c}"><b>${esc(it.code)}</b><span>${esc(it.text)}</span></div>`;
@@ -489,7 +494,11 @@ function render(r) {
     return;
   }
   const nowM = mon(BASE);
-  grid.innerHTML = r.months.map(c => {
+  // 標籤是否「尚未發生」：未來月份全部；本月以前只看該筆是否尚未發生（est）
+  const blankify = (arr, future) => arr.filter(x => !(future && x.kind === 'note')).map(x => x.kind === 'note' ? x : ((future || x.est) ? { code: x.code, blank: true } : x));
+  grid.innerHTML = r.months.map(c0 => {
+    const future = c0.m > nowM;
+    const c = { ...c0, pay: blankify(c0.pay, future), re: blankify(c0.re, future), ex: blankify(c0.ex, future), sum: future ? {} : c0.sum };
     const row = (lbl, arr, kind) => `<div style="display:flex;flex-direction:column;gap:4px"><span class="rowlbl">${lbl}</span>${arr.length ? arr.map(x => lineHTML(x, kind)).join('') : '<span class="dash">—</span>'}</div>`;
     const S = c.sum || {}, parts = [];
     if (S.reinv > 0.5) parts.push(`再投入 <b>${fmt0(S.reinv)}</b> 元${S.carriedIn > 0.5 ? `（含前期保留 ${fmt0(S.carriedIn)}）` : ''}`);
@@ -499,7 +508,7 @@ function render(r) {
     if (!parts.length && S.pendingPay) parts.push('<span class="est">預計再投入</span>');
     if (!parts.length && c.m === 1 && !c.pay.length) parts.push('年初已投入');
     const sumLine = parts.length ? `<p class="sumline">${parts.map((p, i) => `<span class="nw">${p}${i < parts.length - 1 ? '，' : ''}</span>`).join('')}</p>` : '';
-    return `<div class="card"><div class="mh"><b>${c.m} 月</b>${c.m === nowM ? '<span class="badge">本月</span>' : ''}</div>${row('領息', c.pay, 'pay')}<div style="display:flex;flex-direction:column;gap:4px">${row('除息', c.ex, 'ex')}${sumLine}</div></div>`;
+    return `<div class="card${future ? ' future' : ''}"><div class="mh"><b>${c.m} 月</b>${c.m === nowM ? '<span class="badge">本月</span>' : ''}</div>${row('領息', c.pay, 'pay')}<div style="display:flex;flex-direction:column;gap:4px">${row('除息', c.ex, 'ex')}${sumLine}</div></div>`;
   }).join('');
   const pctS = x => (x >= 0 ? '+' : '') + (x * 100).toFixed(2) + '%';
   const I = investValue();
