@@ -21,16 +21,15 @@ body{min-height:100vh;display:flex;justify-content:center}
 .scroll{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
 .scroll::-webkit-scrollbar{display:none}
 @media (max-width:480px){.stage{padding:0;width:100%}.phone{width:100%;height:100vh;height:100dvh;border:0;border-radius:0;box-shadow:none}}
-.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 18px 12px;background:rgba(10,17,29,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.top h1{flex:1;margin:0;font-size:18px;font-weight:700;letter-spacing:.5px}
-.top .yr{font-size:12px;color:var(--muted);font-weight:500;margin-left:6px}
-.btn{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 16px 12px;background:rgba(10,17,29,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top h1{flex:1;margin:0;font-size:18px;font-weight:700;letter-spacing:.5px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{height:34px;padding:0 13px;border-radius:17px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;flex:none}
 .btn.primary{background:var(--bar);border-color:var(--bar);color:#04121F}
 .body{padding:14px 14px calc(28px + env(safe-area-inset-bottom))}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
 .card + .card{margin-top:12px}
 .hold{display:flex;align-items:center;gap:10px}
-.hold .t{font-size:13px;color:var(--muted)}
+.hold .t{font-size:13px;color:var(--muted);flex:none}
 .hold .t b{color:var(--ink);font-size:15px}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
 .chips::-webkit-scrollbar{display:none}
@@ -51,19 +50,21 @@ body{min-height:100vh;display:flex;justify-content:center}
 .ph p{margin:6px 0 14px;font-size:12.5px;color:var(--muted)}
 .legend{display:flex;gap:12px;font-size:11.5px;color:var(--muted);margin:-6px 0 12px;flex-wrap:wrap}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.ydiv{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin:8px 0 2px 2px;padding-top:8px;border-top:1px dashed var(--line)}
+.ydiv:first-child{margin-top:0;padding-top:0;border-top:0}
 .mrow{display:grid;grid-template-columns:38px 1fr auto 18px;align-items:center;gap:10px;padding:9px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
 .mrow.empty{cursor:default}
 .mrow .m{font-size:14px;color:var(--ink2);text-align:right}
+.mrow.cur .m{color:var(--gold);font-weight:700}
 .track{position:relative;height:9px;border-radius:5px;background:var(--track)}
 .fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;display:flex;overflow:hidden}
 .fill .paid{background:var(--bar)}
 .fill .est{background:rgba(110,195,255,.16);box-shadow:inset 0 0 0 1px rgba(110,195,255,.55)}
+.fill .pend{background:repeating-linear-gradient(-45deg,var(--bar2) 0 4px,#2B6A9C 4px 8px)}
 .phh{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:2px;flex:none}
 .seg button{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:600;padding:5px 9px;border-radius:8px;cursor:pointer}
 .seg button.on{background:var(--bar);color:#04121F}
-.ev.estc{background:transparent;border-style:dashed}
-.fill .pend{background:repeating-linear-gradient(-45deg,var(--bar2) 0 4px,#2B6A9C 4px 8px)}
 .exp{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed rgba(245,197,66,.75)}
 .amt{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;min-width:96px}
 .amt.dash{color:var(--dim);font-weight:600}
@@ -73,20 +74,18 @@ body{min-height:100vh;display:flex;justify-content:center}
 .detail{display:none;margin:2px 0 10px 48px;flex-direction:column;gap:8px}
 .detail.open{display:flex}
 .ev{background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 10px}
+.ev.estc{background:transparent;border-style:dashed}
 .ev .c{font-size:15px;font-weight:800;letter-spacing:.3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tag{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:6px}
 .tag.paid{color:var(--gold);background:rgba(245,197,66,.12)}
 .tag.pend{color:var(--bar);background:rgba(110,195,255,.12)}
 .tag.est{color:var(--muted);background:rgba(141,155,178,.14);font-weight:600}
-.tag.typ{color:var(--ink2);background:transparent;border:1px solid var(--line2);font-weight:500}
 .ev .n{font-size:13px;color:var(--ink2)}
 .ev .a{grid-row:1/3;grid-column:2;align-self:center;font-size:16.5px;font-weight:800;font-variant-numeric:tabular-nums}
 .ev .f{grid-column:1/-1;font-size:12px;color:var(--muted)}
-.ev .f .stk{color:var(--green)}
 .msum{font-size:12px;color:var(--muted);text-align:right;padding:0 4px}
-.yearend{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);line-height:1.7}
-.yearend b{color:var(--ink2)}
 .note{font-size:11.5px;color:var(--dim);line-height:1.7;margin:14px 4px 0}
+.note b{color:var(--muted)}
 .emptyhint{text-align:center;padding:30px 10px;color:var(--muted);font-size:14px;line-height:1.8}
 /* 庫存編輯（獨立畫面） */
 .sheet{position:absolute;inset:0;z-index:20;background:var(--app);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .28s ease;visibility:hidden}
@@ -104,7 +103,7 @@ body{min-height:100vh;display:flex;justify-content:center}
 .add{width:100%;height:44px;border-radius:12px;border:1px dashed var(--line2);background:transparent;color:var(--bar);font-size:14px;font-weight:600;cursor:pointer}
 .sheet .foot{display:flex;gap:10px;padding:12px 14px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
 .sheet .foot .btn{flex:1;height:46px;border-radius:14px;font-size:15px}
-.toast{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:#1F3352;color:var(--ink);font-size:13px;padding:9px 16px;border-radius:18px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:30;white-space:nowrap}
+.toast{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:#1F3352;color:var(--ink);font-size:13px;padding:9px 16px;border-radius:18px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:30;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 #loader{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:var(--bg);transition:opacity .25s}
 #loader.done{opacity:0;pointer-events:none}
@@ -119,7 +118,8 @@ body{min-height:100vh;display:flex;justify-content:center}
 <div id="loader" role="status" aria-label="載入中"><div class="spin"></div></div>
 <div class="stage"><div class="phone" id="phone"><div class="scroll" id="scroll">
   <div class="top">
-    <h1>我的股息現金流<span class="yr" id="yr"></span></h1>
+    <h1>我的股息現金流</h1>
+    <button class="btn" type="button" id="btnShare">分享</button>
     <button class="btn" type="button" id="btnEdit">編輯庫存</button>
   </div>
   <div class="body">
@@ -130,18 +130,17 @@ body{min-height:100vh;display:flex;justify-content:center}
     <div class="card"><div class="kpis" id="kpis"></div></div>
     <div class="card">
       <div class="ph">
-        <div class="phh"><h2>每月股息現金流</h2>
+        <div class="phh"><h2>未來 12 個月現金流</h2>
           <div class="seg" id="seg"><button type="button" data-v="1">含預估</button><button type="button" data-v="0">只看公告</button></div></div>
-        <p>以發放日入袋計算。點有金額的月份，可查看是哪些持股入帳。</p>
+        <p id="range">以發放日入帳計算。點有金額的月份，可以看是哪幾檔入帳。</p>
       </div>
       <div class="legend">
-        <span><i style="background:var(--bar)"></i>已入袋</span>
+        <span><i style="background:var(--bar)"></i>已入帳</span>
         <span><i style="background:repeating-linear-gradient(-45deg,var(--bar2) 0 3px,#2B6A9C 3px 6px)"></i>已公告・待發放</span>
         <span id="lgEst"><i style="background:rgba(110,195,255,.16);box-shadow:inset 0 0 0 1px rgba(110,195,255,.6)"></i>預估</span>
         <span id="lgExp" hidden><i style="background:transparent;border-left:2px dashed var(--gold);border-radius:0;width:2px"></i>每月開銷</span>
       </div>
       <div id="months"></div>
-      <div class="yearend" id="yearend"></div>
     </div>
     <p class="note" id="note"></p>
   </div>
@@ -153,7 +152,7 @@ body{min-height:100vh;display:flex;justify-content:center}
       <button class="btn" type="button" id="btnSample">範例</button>
     </div>
     <div class="list">
-      <p class="hint">輸入股票或 ETF 代號與目前持有股數（1 張 = 1,000 股）。上市個股與台股 ETF 皆可。儲存後依這份庫存推算全年股息。</p>
+      <p class="hint">輸入股票或 ETF 代號與目前持有股數（1 張 = 1,000 股）。上市、上櫃個股與台股 ETF 都可以。儲存後依這份庫存推算未來 12 個月的股息。</p>
       <div class="hhead"><span>代號</span><span>股數</span><span></span></div>
       <div id="hrows"></div>
       <button class="add" type="button" id="btnAdd">＋ 新增一檔</button>
@@ -169,32 +168,38 @@ body{min-height:100vh;display:flex;justify-content:center}
 
 <script>
 /* ===== 資料來源（每天由雪鴞同步程式更新）=====
-   個股：「個股配息上傳」Apps Script 的 /exec 網址（Google Sheet）
+   個股：「個股配息上傳」Apps Script 的 /exec 網址（Google Sheet；上市＋上櫃）
    ETF ：「領息大地圖（雪鴞版）」Apps Script 的 /exec 網址（與領息大地圖共用） */
-// ↓↓↓ 換成「個股配息上傳」的 /exec 網址（只改引號裡面）↓↓↓
 const STOCK_URL = 'https://script.google.com/macros/s/AKfycbyLWNvrA-aBZscUEcS48o1ItUmZoHEnl8IovlhARDmiS9JxDfpv3qsew3bWjkWlsUOT0Q/exec';
 const ETF_URL = 'https://script.google.com/macros/s/AKfycbxj5wW6Ve2zNvp0SJS3zluGE_yd7WyNWP6HrPHGVwZDblQR0JSQPA9MPoZ9IDDvXd4F/exec';
 let DATA = null;
 const SAMPLE = [['0056', 10000], ['00878', 10000], ['00919', 10000], ['2330', 1000], ['2412', 3000], ['2884', 20000]];
-const KEY_H = 'divflow_holdings_v1', KEY_X = 'divflow_expense_v1';
+const KEY_H = 'divflow_holdings_v1', KEY_X = 'divflow_expense_v1', KEY_E = 'divflow_showest_v1';
+const NHI_RATE = 0.0211, NHI_MIN = 20000;            // 二代健保補充保費（現制：單筆達 2 萬元扣 2.11%）
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('en-US');
 const md = d => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
+const ymd = d => `${d.slice(0, 4)}/${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
+const QS = new URLSearchParams(location.search);
 const REAL_TODAY = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });   // YYYY-MM-DD（台北時間）
-const SIM = (new URLSearchParams(location.search).get('asof') || '').match(/^\d{4}-\d{2}-\d{2}$/) ? new URLSearchParams(location.search).get('asof') : '';
-const TODAY = SIM || REAL_TODAY;          // 網址加 ?asof=2026-01-10 可模擬「站在那一天」看畫面
+const SIM = /^\d{4}-\d{2}-\d{2}$/.test(QS.get('asof') || '') ? QS.get('asof') : '';
+const TODAY = SIM || REAL_TODAY;          // 網址加 ?asof=2026-03-10 可模擬「站在那一天」看畫面（測試用）
 const YEAR = TODAY.slice(0, 4);
-const byCode = {};
 
-let holdings = store.get(KEY_H, null) || SAMPLE.slice();
-let expense = store.get(KEY_X, 0);
-let showEst = store.get('divflow_showest_v1', true);   // 預設含預估
-const prevByCode = {};
-const openMonths = new Set();
+const addDays = (d, n) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+const addMonths = (d, n) => { const t = new Date(d + 'T00:00:00Z'); const day = t.getUTCDate(); t.setUTCDate(1); t.setUTCMonth(t.getUTCMonth() + n); const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate(); t.setUTCDate(Math.min(day, last)); return t.toISOString().slice(0, 10); };
+const dayDiff = (a, b) => Math.round((new Date(a + 'T00:00:00Z') - new Date(b + 'T00:00:00Z')) / 864e5);
+const weekday = d => { let t = d; for (let i = 0; i < 3; i++) { const w = new Date(t + 'T00:00:00Z').getUTCDay(); if (w === 0 || w === 6) t = addDays(t, 1); else break; } return t; };
+
+/* ===== 滾動 12 個月：本月 → 11 個月後 ===== */
+const START = TODAY.slice(0, 7) + '-01';
+const WIN = Array.from({ length: 12 }, (_, i) => { const d = addMonths(START, i); return { y: +d.slice(0, 4), m: +d.slice(5, 7) }; });
+const WIN_END = new Date(Date.UTC(WIN[11].y, WIN[11].m, 0)).toISOString().slice(0, 10);
+const mIdx = d => { if (!d) return -1; const i = (+d.slice(0, 4) - WIN[0].y) * 12 + (+d.slice(5, 7) - WIN[0].m); return i >= 0 && i < 12 ? i : -1; };
 
 function lots(sh) {
   const z = Math.floor(sh / 1000), r = sh % 1000;
@@ -202,113 +207,134 @@ function lots(sh) {
   if (z) return `${fmt(z)} 張 ${r} 股`;
   return `${fmt(r)} 股`;
 }
-const addDays = (d, n) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
-const addMonths = (d, n) => { const t = new Date(d + 'T00:00:00Z'); const day = t.getUTCDate(); t.setUTCDate(1); t.setUTCMonth(t.getUTCMonth() + n); const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate(); t.setUTCDate(Math.min(day, last)); return t.toISOString().slice(0, 10); };
-const dayDiff = (a, b) => Math.round((new Date(a + 'T00:00:00Z') - new Date(b + 'T00:00:00Z')) / 864e5);
-const weekday = d => { let t = d; for (let i = 0; i < 3; i++) { const w = new Date(t + 'T00:00:00Z').getUTCDay(); if (w === 0 || w === 6) t = addDays(t, 1); else break; } return t; };
+
+/* ===== 庫存：分享連結 ?h=0056:10000,2330:1000 優先，其次瀏覽器儲存 ===== */
+function parseH(s) {
+  const m = new Map();
+  String(s || '').split(',').forEach(p => {
+    const [c, n] = p.split(':');
+    const code = String(c || '').trim().toUpperCase(), sh = Math.floor(+String(n || '').replace(/[^\d]/g, ''));
+    if (/^[0-9A-Z]{4,6}$/.test(code) && sh > 0) m.set(code, (m.get(code) || 0) + sh);
+  });
+  return [...m.entries()];
+}
+const encodeH = h => h.map(([c, s]) => `${c}:${s}`).join(',');
+let fromLink = false;
+let holdings = (() => {
+  const h = parseH(QS.get('h'));
+  if (h.length) { fromLink = true; store.set(KEY_H, h); return h; }
+  return store.get(KEY_H, null) || SAMPLE.slice();
+})();
+let expense = store.get(KEY_X, 0);
+let showEst = store.get(KEY_E, true);   // 預設含預估
+const actualByCode = {};                // 今年＋去年的正式配息（含已公告未發放）
+const openMonths = new Set();
+
+function shareURL() {
+  const q = new URLSearchParams();
+  q.set('h', encodeH(holdings));
+  return location.origin + location.pathname + '?' + q.toString().replace(/%3A/g, ':').replace(/%2C/g, ',');
+}
+function syncURL() {   // 網址列跟著目前庫存，方便加入書籤
+  try {
+    const q = new URLSearchParams(location.search);
+    if (holdings.length) q.set('h', encodeH(holdings)); else q.delete('h');
+    const s = q.toString().replace(/%3A/g, ':').replace(/%2C/g, ',');
+    history.replaceState(null, '', location.pathname + (s ? '?' + s : ''));
+  } catch (e) {}
+}
 
 /* 模擬模式：除息日超過模擬日 30 天以上的，視為當時尚未公告 */
 const announced = e => !SIM || e.ex <= addDays(SIM, 30);
 
-/* 預估：個股＝去年同期；ETF＝最近一次配息金額 × 配息頻率往後排 */
+/* ===== 預估（尚未公告的配息）=====
+   ETF：最近一次配息金額 × 配息頻率往後排
+   個股：去年同期（每一筆正式配息往後平移 12 個月；與正式公告相差 60 天內視為同一期） */
 function estimatesFor(code, known) {
   const out = [];
   const isETF = (DATA.sec[code] || [])[1] === 'ETF';
-  const cur = known.filter(e => e.ex.startsWith(YEAR));
-  if (isETF) {
-    const all = known.concat((prevByCode[code] || []).filter(p => !known.some(k => k.ex === p.ex))).filter(e => e.cash > 0).sort((a, b) => a.ex < b.ex ? -1 : 1);
-    const last = all[all.length - 1];
-    if (last && all.length >= 2) {
-      const gaps = [];
-      for (let i = 1; i < all.length; i++) gaps.push(dayDiff(all[i].ex, all[i - 1].ex));
-      gaps.sort((a, b) => a - b);
-      const g = gaps[Math.floor(gaps.length / 2)];
-      const step = g < 50 ? 1 : g < 130 ? 3 : g < 250 ? 6 : 12;
-      const lag = last.pay ? Math.max(7, dayDiff(last.pay, last.ex)) : 25;
-      for (let k = 1; k <= 12; k++) {
-        const ex = weekday(addMonths(last.ex, step * k));
-        if (ex > `${YEAR}-12-31`) break;
-        const pay = weekday(addDays(ex, lag));
-        if (!pay.startsWith(YEAR) || addDays(ex, 30) < TODAY) continue;
-        out.push({ code, ex, pay, cash: last.cash, stk: 0, estimate: true, basis: `參考最近一次 ${md(last.ex)} 除息，每單位 ${+last.cash.toFixed(4)}` });
-      }
-      return out;
+  const base = known.filter(e => e.cash > 0).sort((a, b) => a.ex < b.ex ? -1 : 1);
+  if (isETF && base.length >= 2) {
+    const last = base[base.length - 1];
+    const gaps = [];
+    for (let i = 1; i < base.length; i++) gaps.push(dayDiff(base[i].ex, base[i - 1].ex));
+    gaps.sort((a, b) => a - b);
+    const g = gaps[Math.floor(gaps.length / 2)];
+    const step = g < 50 ? 1 : g < 130 ? 3 : g < 250 ? 6 : 12;
+    const lag = last.pay ? Math.max(7, dayDiff(last.pay, last.ex)) : 25;
+    for (let k = 1; k <= 30; k++) {
+      const ex = weekday(addMonths(last.ex, step * k));
+      if (ex > WIN_END) break;
+      const pay = weekday(addDays(ex, lag));
+      if (mIdx(pay) < 0 || addDays(ex, 30) < TODAY) continue;   // 不在期間內，或早該公告卻沒公告
+      out.push({ code, ex, pay, cash: last.cash, estimate: true, basis: `參考最近一次 ${ymd(last.ex)} 除息，每單位 ${+last.cash.toFixed(4)}` });
     }
+    return out;
   }
   const used = new Set();
-  (prevByCode[code] || []).filter(p => p.cash > 0).forEach(p => {
+  base.forEach(p => {
     const ex = weekday(addMonths(p.ex, 12));
-    const pay = p.pay ? weekday(addMonths(p.pay, 12)) : weekday(addDays(ex, 30));
     let best = -1, bd = 61;
-    cur.forEach((c, i) => { const d = Math.abs(dayDiff(c.ex, ex)); if (!used.has(i) && d < bd) { bd = d; best = i; } });
-    if (best >= 0) { used.add(best); return; }                 // 今年同期已公告 → 以正式為準
-    if (!pay.startsWith(YEAR) || addDays(ex, 30) < TODAY) return;   // 不在今年入帳，或該公告未公告（可能停發）
-    out.push({ code, ex, pay, cash: p.cash, stk: 0, estimate: true, basis: `參考去年 ${md(p.pay || p.ex)} 發放，每股 ${+p.cash.toFixed(4)}` });
+    known.forEach((c, i) => { const d = Math.abs(dayDiff(c.ex, ex)); if (!used.has(i) && d < bd) { bd = d; best = i; } });
+    if (best >= 0) { used.add(best); return; }                    // 同期已公告 → 以正式為準
+    const pay = p.pay ? weekday(addMonths(p.pay, 12)) : weekday(addDays(ex, 30));
+    if (mIdx(pay) < 0 || addDays(ex, 30) < TODAY) return;          // 不在期間內，或已過期仍未公告（可能停發）
+    out.push({ code, ex, pay, cash: p.cash, estimate: true, basis: `參考去年 ${ymd(p.pay || p.ex)} 發放，每股 ${+p.cash.toFixed(4)}` });
   });
   return out;
 }
 function compute() {
   const months = Array.from({ length: 12 }, () => ({ paid: 0, pend: 0, est: 0, items: [] }));
-  const later = [], unknown = [];
   holdings.forEach(([code, sh]) => {
-    const known = (byCode[code] || []).filter(announced);
-    const prevPaidHere = (prevByCode[code] || []).filter(p => p.pay && p.pay.startsWith(YEAR));   // 去年除息、今年發放
-    const list = known.concat(prevPaidHere.filter(p => !known.some(k => k.ex === p.ex)));
+    const known = (actualByCode[code] || []).filter(announced);
+    const list = known.map(e => e.pay ? e : { ...e, pay: weekday(addDays(e.ex, 30)), inferred: true });
     if (showEst) estimatesFor(code, known).forEach(e => list.push(e));
     list.forEach(e => {
-      const fromPrev = !e.ex.startsWith(YEAR);
-      if (fromPrev && !(e.pay && e.pay.startsWith(YEAR))) return;
+      if (!(e.cash > 0)) return;                                   // 只算現金股利，配股不計
+      const m = mIdx(e.pay);
+      if (m < 0) return;
       const amt = sh * e.cash;
-      const stkSh = sh * (e.stk || 0) / 10;                    // 股票股利（元）÷ 面額 10 = 每股配幾股
-      const it = { ...e, sh, amt, stkSh, paid: !e.estimate && !!e.pay && e.pay <= TODAY };
-      if (!e.pay) { unknown.push(it); return; }
-      if (!e.pay.startsWith(YEAR)) { if (!e.estimate) later.push(it); return; }
-      const m = +e.pay.slice(5, 7) - 1;
+      const it = { ...e, sh, amt, paid: !e.estimate && e.pay <= TODAY };
       months[m].items.push(it);
-      if (amt > 0) { if (e.estimate) months[m].est += amt; else if (it.paid) months[m].paid += amt; else months[m].pend += amt; }
+      if (e.estimate) months[m].est += amt; else if (it.paid) months[m].paid += amt; else months[m].pend += amt;
     });
   });
   months.forEach(m => m.items.sort((a, b) => a.pay < b.pay ? -1 : a.pay > b.pay ? 1 : b.amt - a.amt));
-  return { months, later, unknown };
+  return months;
 }
 function render() {
-  $('yr').textContent = YEAR;
   $('hcount').textContent = holdings.length;
-  $('chips').innerHTML = holdings.map(([c, s]) => `<span class="chip">${c} ${(DATA.sec[c] || [c])[0]}・${lots(s)}</span>`).join('');
-  const { months, later, unknown } = compute();
+  $('chips').innerHTML = holdings.map(([c, s]) => `<span class="chip">${c} ${(DATA.sec[c] || [''])[0]}・${lots(s)}</span>`).join('');
+  const months = compute();
   const paid = months.reduce((s, m) => s + m.paid, 0), pend = months.reduce((s, m) => s + m.pend, 0), est = months.reduce((s, m) => s + m.est, 0);
-  const curM = +TODAY.slice(5, 7);
-  const passed = curM - (TODAY.slice(8) < '28' ? 1 : 0) || 1;      // 已完整過完的月份數
-  const total = paid + pend + est;
-  const avgYear = total / 12;
-  const laterAmt = later.reduce((s, x) => s + x.amt, 0);
-  let cov = '';
-  if (expense > 0) {
-    const r = avgYear / expense * 100;
-    cov = `全年平均每月可 cover <b class="${r < 100 ? 'low' : ''}">${r.toFixed(0)}%</b>`;
-  } else cov = '輸入每月開銷，看股息能 cover 幾成';
+  const total = paid + pend + est, avg = total / 12;
+  const rangeTxt = `${WIN[0].y}/${WIN[0].m}～${WIN[11].y}/${WIN[11].m}`;
+  const cov = expense > 0
+    ? `平均每月可 cover <b class="${avg < expense ? 'low' : ''}">${(avg / expense * 100).toFixed(0)}%</b>`
+    : '輸入每月開銷，看股息能 cover 幾成';
   $('kpis').innerHTML = `
-    <div class="kpi big"><div class="l">今年已入袋股息</div><div class="v">NT$${fmt(paid)}</div><div class="s">已過發放日的配息合計（截至 ${md(TODAY)}${SIM ? '・模擬' : ''}）</div></div>
-    <div class="kpi"><div class="l">全年預計</div><div class="v">NT$${fmt(total)}</div><div class="s">待發放 ${fmt(pend)}${showEst ? `・預估 ${fmt(est)}` : ''}</div></div>
-    <div class="kpi"><div class="l">平均每月</div><div class="v">NT$${fmt(avgYear)}</div><div class="s">全年預計 ÷ 12</div></div>
+    <div class="kpi big"><div class="l">未來 12 個月預計領息</div><div class="v">NT$${fmt(total)}</div><div class="s">${rangeTxt}・以發放日計${SIM ? `・模擬 ${SIM}` : ''}</div></div>
+    <div class="kpi"><div class="l">平均每月</div><div class="v">NT$${fmt(avg)}</div><div class="s">12 個月合計 ÷ 12</div></div>
+    <div class="kpi"><div class="l">已公告</div><div class="v">NT$${fmt(paid + pend)}</div><div class="s">${showEst ? `另有預估 ${fmt(est)}` : '不含預估'}${paid ? `・本月已入帳 ${fmt(paid)}` : ''}</div></div>
     <div class="cover"><label for="exp">每月開銷</label><input id="exp" inputmode="numeric" placeholder="例：30000" value="${expense ? fmt(expense) : ''}"><span class="res">${cov}</span></div>`;
   $('exp').onchange = e => { expense = +String(e.target.value).replace(/[^\d.]/g, '') || 0; store.set(KEY_X, expense); render(); };
+  $('range').textContent = `${rangeTxt}，以發放日入帳計算。點有金額的月份，可以看是哪幾檔入帳。`;
   const max = Math.max(1, ...months.map(m => m.paid + m.pend + m.est), expense || 0);
   $('lgExp').hidden = !(expense > 0);
   $('lgEst').hidden = !showEst;
-  document.querySelectorAll('#seg button').forEach(b => { b.classList.toggle('on', (b.dataset.v === '1') === showEst); b.onclick = () => { showEst = b.dataset.v === '1'; store.set('divflow_showest_v1', showEst); render(); }; });
+  document.querySelectorAll('#seg button').forEach(b => { b.classList.toggle('on', (b.dataset.v === '1') === showEst); b.onclick = () => { showEst = b.dataset.v === '1'; store.set(KEY_E, showEst); render(); }; });
   if (!holdings.length) {
     $('months').innerHTML = `<div class="emptyhint">還沒有庫存<br>點右上角「編輯庫存」輸入持股</div>`;
   } else {
     $('months').innerHTML = months.map((m, i) => {
-      const tot = m.paid + m.pend + m.est, has = m.items.length > 0, open = openMonths.has(i) && has;
+      const w = WIN[i], tot = m.paid + m.pend + m.est, has = m.items.length > 0, open = openMonths.has(i) && has;
       const exp = expense > 0 ? `<div class="exp" style="left:${(expense / max * 100).toFixed(2)}%"></div>` : '';
-      const stkOnly = has && tot === 0;
-      return `
-      <div class="mrow ${has ? '' : 'empty'} ${open ? 'open' : ''}" data-m="${i}" role="button" aria-expanded="${open}">
-        <div class="m">${i + 1} 月</div>
+      const yd = (i === 0 || w.m === 1) ? `<div class="ydiv">${w.y} 年</div>` : '';
+      return `${yd}
+      <div class="mrow ${has ? '' : 'empty'} ${open ? 'open' : ''} ${i === 0 ? 'cur' : ''}" data-m="${i}" role="button" aria-expanded="${open}">
+        <div class="m">${w.m} 月</div>
         <div class="track"><div class="fill" style="width:${(tot / max * 100).toFixed(2)}%"><div class="paid" style="flex:${m.paid}"></div><div class="pend" style="flex:${m.pend}"></div><div class="est" style="flex:${m.est}"></div></div>${exp}</div>
-        <div class="amt ${tot ? '' : 'dash'}">${tot ? 'NT$' + fmt(tot) : stkOnly ? '配股' : '—'}</div>
+        <div class="amt ${tot ? '' : 'dash'}">${tot ? 'NT$' + fmt(tot) : '—'}</div>
         <div class="chev"></div>
       </div>
       <div class="detail ${open ? 'open' : ''}">${has ? detail(m) : ''}</div>`;
@@ -317,35 +343,31 @@ function render() {
       const i = +r.dataset.m; openMonths.has(i) ? openMonths.delete(i) : openMonths.add(i); render();
     });
   }
-  const ye = [];
-  if (later.length) ye.push(`<b>${+YEAR + 1} 年 1 月入帳：</b>${later.map(x => `${x.code} ${fmt(x.amt)}`).join('、')}（今年除息、明年發放，合計 NT$${fmt(laterAmt)}，不列入今年）`);
-  if (unknown.length) ye.push(`<b>發放日待公告：</b>${unknown.map(x => `${x.code}（${md(x.ex)} 除息）${fmt(x.amt)}`).join('、')}`);
-  $('yearend').innerHTML = ye.join('<br>');
-  $('yearend').hidden = !ye.length;
-  $('note').innerHTML = `計算方式：以目前庫存股數，假設年初起持有至今；每筆股息 = 股數 × 每股現金股利，於「股息發放日」當天起算入袋，不再投入。金額不含交易成本、二代健保補充保費與匯費。資料：雪鴞 API，資料日 ${DATA.updated ? md(DATA.updated) : '—'}；標示「日期推估」的 ETF 配息，發放日或金額依過去規律推估。「預估」為尚未公告的配息：個股依去年同期、ETF 依最近一次配息金額推算，實際以公告為準；去年除息、今年發放的配息也計入今年（假設年初前已持有）。${SIM ? `<br>目前為模擬模式：站在 ${SIM} 看畫面。` : ''}`;
+  $('note').innerHTML = `<b>計算方式</b>：以目前庫存股數計算，期間為本月起滾動 12 個月（${rangeTxt}）；每筆股息 = 股數 × 每股現金股利，於「股息發放日」入帳，只要發放日落在期間內就計入（不考慮買進時間），不再投入。只計現金股利，<b>配股不計</b>。標示「日期推估」的，發放日或金額依過去規律推估。
+  <br><b>預估</b>：尚未公告的配息，個股依去年同期、ETF 依最近一次配息金額與配息頻率往後推算；去年同期已過一個月仍未公告的視為停發。實際以公司公告為準。
+  <br><b>實際入帳會再少一些</b>：畫面金額為股利總額，未扣除以下費用。①二代健保補充保費：單筆股利達 NT$${fmt(NHI_MIN)} 元，由發放單位直接扣 ${(NHI_RATE * 100).toFixed(2)}%（例：單筆 3 萬元扣 ${fmt(30000 * NHI_RATE)} 元；單筆上限 1,000 萬元；年度結算新制已暫緩，若有變動以健保署公告為準）。ETF 只有收益分配中的股利所得部分要扣。②匯費：每筆約 10 元，依各公司規定。③股利所得稅：隔年 5 月報稅時，可選「合併計稅」（股利 8.5% 可抵減稅額，每戶上限 8 萬元）或「分開計稅」（28% 單一稅率），依個人稅率而定，入帳時不會先扣。
+  <br>資料：雪鴞 API，資料日 ${DATA.updated ? ymd(DATA.updated) : '—'}。依歷史資料試算，不代表未來配息，不構成投資建議。${SIM ? `<br>目前為模擬模式：站在 ${SIM} 看畫面。` : ''}`;
 }
 function detail(m) {
-  const sum = `<div class="msum">已入袋 ${fmt(m.paid)}${m.pend ? `・待發放 ${fmt(m.pend)}` : ''}${m.est ? `・預估 ${fmt(m.est)}` : ''}</div>`;
+  const sum = `<div class="msum">${m.paid ? `已入帳 ${fmt(m.paid)}・` : ''}${m.pend ? `待發放 ${fmt(m.pend)}・` : ''}${m.est ? `預估 ${fmt(m.est)}` : ''}`.replace(/・$/, '') + '</div>';
   return m.items.map(x => {
     const s = DATA.sec[x.code] || [x.code, ''];
-    const tag = x.estimate ? '<span class="tag est">預估</span>' : x.paid ? '<span class="tag paid">已到發放日</span>' : '<span class="tag pend">待發放</span>';
-    const inf = !x.estimate && x.est ? '<span class="tag est">日期推估</span>' : '';
-    const stk = x.stkSh > 0 ? `<span class="stk">＋配股 ${fmt(x.stkSh)} 股${x.stkPay ? `（${md(x.stkPay)} 撥入）` : ''}</span>・` : '';
-    const cash = x.cash > 0 ? `${lots(x.sh)} × NT$ ${+x.cash.toFixed(4)} 每股` : '僅配股';
+    const tag = x.estimate ? '<span class="tag est">預估</span>' : x.paid ? '<span class="tag paid">已入帳</span>' : '<span class="tag pend">待發放</span>';
+    const inf = !x.estimate && (x.est || x.inferred) ? '<span class="tag est">日期推估</span>' : '';
     const line = x.estimate
       ? `預計 ${md(x.pay)} 前後發放・${lots(x.sh)} × NT$ ${+x.cash.toFixed(4)}・${x.basis}`
-      : `${md(x.pay)} 發放・${stk}${cash}・${x.ex.startsWith(YEAR) ? '' : (+x.ex.slice(0, 4)) + '/'}${md(x.ex)} 除息`;
+      : `${md(x.pay)} 發放・${lots(x.sh)} × NT$ ${+x.cash.toFixed(4)} 每股・${x.ex.slice(0, 4) === x.pay.slice(0, 4) ? md(x.ex) : ymd(x.ex)} 除息`;
     return `<div class="ev${x.estimate ? ' estc' : ''}">
       <div class="c">${x.code}${tag}${inf}</div>
-      <div class="a">${x.amt > 0 ? 'NT$' + fmt(x.amt) : '—'}</div>
-      <div class="n">${s[0]}・${s[1]}</div>
+      <div class="a">NT$${fmt(x.amt)}</div>
+      <div class="n">${s[0]}${s[1] ? '・' + s[1] : ''}</div>
       <div class="f">${line}</div>
     </div>`;
   }).join('') + sum;
 }
 /* ---------- 庫存編輯 ---------- */
 let draft = [];
-function nameOf(c) { const s = DATA.sec[c]; return s ? `${s[0]}・${s[1]}${byCode[c] ? '' : '・今年無配息'}` : ''; }
+function nameOf(c) { const s = DATA.sec[c]; return s ? `${s[0]}・${s[1]}${actualByCode[c] ? '' : '・近兩年無配息'}` : ''; }
 function openSheet() {
   if (!DATA) return;
   draft = holdings.map(h => [h[0], h[1]]);
@@ -390,11 +412,34 @@ function save() {
   rows.forEach(([c, s]) => { merged.set(c, (merged.get(c) || 0) + s); });
   holdings = [...merged.entries()];
   store.set(KEY_H, holdings);
+  syncURL();
+  postToApp({ type: 'holdings', h: encodeH(holdings) });
   openMonths.clear(); closeSheet(); render(); toast('庫存已儲存');
 }
+/* ---------- 分享連結 ---------- */
+function copyText(t) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t);
+  return new Promise((ok, no) => {
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy') ? ok() : no(); } catch (e) { no(e); } finally { ta.remove(); }
+  });
+}
+function share() {
+  if (!holdings.length) { toast('還沒有庫存可以分享'); return; }
+  const url = shareURL();
+  postToApp({ type: 'share', url, h: encodeH(holdings) });
+  if (navigator.share && !document.documentElement.classList.contains('embed')) {
+    navigator.share({ title: '我的股息現金流', url }).catch(() => {});
+    return;
+  }
+  copyText(url).then(() => toast('已複製分享連結，換裝置貼上就能看到同一份庫存'), () => toast('無法自動複製，請長按網址列複製'));
+}
 let tt;
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('show'), 1800); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('show'), 2200); }
 $('btnEdit').onclick = openSheet;
+$('btnShare').onclick = share;
 $('btnCancel').onclick = closeSheet;
 $('btnSave').onclick = save;
 $('btnAdd').onclick = () => { draft.push(['', '']); drawRows(); const r = document.querySelectorAll('.hrow .cd'); r[r.length - 1].focus(); };
@@ -411,38 +456,40 @@ function getJSON(url, label, year) {
     })
     .catch(e => { throw new Error(e && e.message && e.message.indexOf('Failed to fetch') < 0 ? e.message : label + '資料服務連不到'); });
 }
+function addActual(code, e) {
+  const a = actualByCode[code] = actualByCode[code] || [];
+  if (!a.some(x => x.ex === e.ex)) a.push(e);
+}
 function boot() {
   const PREV = String(+YEAR - 1);
   Promise.allSettled([getJSON(STOCK_URL, '個股'), getJSON(ETF_URL, 'ETF'), getJSON(STOCK_URL, '個股（前一年）', PREV)]).then(([st, et, sp]) => {
-    const sec = {}, ev = [], warn = [];
-    let updated = '';
-    if (st.status === 'fulfilled' && st.value && st.value.ok) {
-      Object.entries(st.value.sec || {}).forEach(([c, n]) => { sec[c] = [n, '個股']; });
-      (st.value.ev || []).forEach(e => ev.push(e));
-      updated = st.value.updated || '';
-    } else warn.push(st.reason ? st.reason.message : '個股資料服務回傳空資料（' + JSON.stringify(st.value || {}).slice(0, 60) + '）');
+    const sec = {}, warn = [];
+    let updated = '', n = 0;
+    const mkOf = v => c => ((v && v.mk) || {})[c] === '上櫃' ? '上櫃' : '上市';
+    const stockEv = (v, label) => {
+      const mk = mkOf(v);
+      Object.entries(v.sec || {}).forEach(([c, nm]) => { if (!sec[c]) sec[c] = [nm, mk(c)]; });
+      (v.ev || []).forEach(e => { addActual(e[0], { code: e[0], ex: e[1], pay: e[2] || '', cash: +e[3] || 0, est: !!e[5] }); n++; });
+    };
+    if (st.status === 'fulfilled' && st.value && st.value.ok) { stockEv(st.value); updated = st.value.updated || ''; }
+    else warn.push(st.reason ? st.reason.message : '個股資料服務回傳空資料');
+    if (sp.status === 'fulfilled' && sp.value && sp.value.ok) stockEv(sp.value);
     if (et.status === 'fulfilled' && et.value && et.value.etfs) {
       const d = et.value;
       d.etfs.forEach(x => { sec[x.code] = [x.name, 'ETF']; });
-      Object.entries(d.events || {}).forEach(([c, list]) => list.forEach(x => {
-        if (x.ex) ev.push([c, x.ex, x.pay || '', +x.dps || 0, 0, (x.estPay || x.estDps) ? 1 : 0, '']);
-      }));
+      [d.events, d.prevEvents].forEach(group => Object.entries(group || {}).forEach(([c, list]) => list.forEach(x => {
+        if (x.ex) { addActual(c, { code: c, ex: x.ex, pay: x.pay || '', cash: +x.dps || 0, est: !!(x.estPay || x.estDps) }); n++; }
+      })));
       if (d.base && d.base > updated) updated = d.base;
-      Object.entries(d.prevEvents || {}).forEach(([c, list]) => list.forEach(x => {
-        (prevByCode[c] = prevByCode[c] || []).push({ code: c, ex: x.ex, pay: x.pay || '', cash: +x.dps || 0, stk: 0 });
-      }));
-    } else warn.push(et.reason ? et.reason.message : 'ETF 資料服務回傳空資料（' + JSON.stringify(et.value || {}).slice(0, 60) + '），可能尚未上傳或部署版本不對');
-    if (sp.status === 'fulfilled' && sp.value && sp.value.ok) {
-      Object.entries(sp.value.sec || {}).forEach(([c, n]) => { if (!sec[c]) sec[c] = [n, '個股']; });
-      (sp.value.ev || []).forEach(e => { (prevByCode[e[0]] = prevByCode[e[0]] || []).push({ code: e[0], ex: e[1], pay: e[2], cash: e[3], stk: e[4], stkPay: e[6] || '' }); });
-    }
+    } else warn.push(et.reason ? et.reason.message : 'ETF 資料服務回傳空資料，可能尚未上傳或部署版本不對');
     hideLoader();
-    if (!ev.length) { showFail(warn.join('；') || '讀取資料失敗'); return; }
-    DATA = { asof: TODAY, updated, sec, ev, warn };
-    ev.forEach(e => { (byCode[e[0]] = byCode[e[0]] || []).push({ code: e[0], ex: e[1], pay: e[2], cash: e[3], stk: e[4], est: !!e[5], stkPay: e[6] || '' }); });
+    if (!n) { showFail(warn.join('；') || '讀取資料失敗'); return; }
+    DATA = { asof: TODAY, updated, sec, warn };
     $('codes').innerHTML = Object.keys(sec).sort().map(c => `<option value="${c} ${sec[c][0]}">`).join('');
+    syncURL();
     render();
     if (warn.length) toast(warn[0]);
+    else if (fromLink) toast(`已帶入分享連結的庫存（${holdings.length} 檔）`);
     postToApp({ type: 'ready', title: '我的股息現金流', updated });
   });
 }
@@ -452,7 +499,6 @@ function showFail(msg) {
   postToApp({ type: 'error', message: msg });
 }
 /* ---------- 嵌入 APP（?embed=1）---------- */
-const QS = new URLSearchParams(location.search);
 if (QS.get('embed') === '1') document.documentElement.classList.add('embed');
 function postToApp(obj) {
   const msg = JSON.stringify(obj);
