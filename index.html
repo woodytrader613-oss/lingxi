@@ -114,6 +114,9 @@ a{color:var(--accent)}
 .ln.blank{justify-content:flex-start;border-style:dashed;background:transparent}
 .ln.blank b{opacity:.75}
 .card.future .mh b{color:var(--muted)}
+.asofbar{margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--accent);color:var(--accent);font-size:13px;line-height:1.5}
+.asofbar[hidden]{display:none}
+.asofbar.warn{border-color:#FF9B8A;color:#FF9B8A}
 .dash{font-size:13px;color:var(--dim);min-height:24px;display:flex;align-items:center}
 .plain{font-size:11.5px;color:var(--muted);min-height:24px;display:flex;align-items:center;line-height:1.4}
 .empty{padding:32px 12px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
@@ -185,7 +188,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 #cardsPanel{scroll-margin-top:72px}
 .sumline{margin:2px 0 0;font-size:12px;line-height:1.5;color:var(--muted)}
 .sumline b{color:var(--ink);font-weight:600}
-.sumline .nw{white-space:nowrap}
+.sumline .nw{white-space:normal}
 .sumline .est{border-bottom:1px dashed currentColor}
 
 /* ===== 載入中 ===== */
@@ -231,6 +234,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
         </div>
         <div class="app-body">
           <section id="selectPanel" class="panel">
+            <div class="asofbar" id="asofBar" role="status" hidden></div>
             <div class="sec-title"><h2>選擇標的</h2><span>已選 <b id="selCount" style="color:var(--accent)">0</b> 檔</span></div>
             <div class="chips" id="selChips"></div>
             <div class="field">
@@ -573,7 +577,40 @@ function syncRatio() {
 $('ratio').addEventListener('input', () => { syncRatio(); update(); });
 syncRatio();
 
+/* ===== 模擬指定日期：網址加 ?asof=20260305 或 ?asof=2026-03-05 =====
+   只用那一天（含）以前的收盤價與已發生的除息；除息日在 30 天內的視為已公告。 */
+function parseAsof(v) {
+  if (!v) return '';
+  const m = String(v).trim().match(/^(\d{4})-?(\d{2})-?(\d{2})$/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : 'bad';
+}
+function addDays(iso, n) { const t = new Date(iso + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+function showAsof(text, warn) { const b = $('asofBar'); b.textContent = text; b.classList.toggle('warn', !!warn); b.hidden = false; }
+function applyAsof(d) {
+  const a = parseAsof(QS.get('asof'));
+  if (!a) return d;
+  if (a === 'bad') { showAsof('模擬日期格式錯誤，請用 ?asof=20260305，目前以最新資料計算', true); return d; }
+  if (a >= d.base) { showAsof(`模擬日期 ${a.replace(/-/g, '/')} 晚於最近交易日，以最新資料計算`, true); return d; }
+  if (a < d.start) { showAsof(`模擬日期 ${a.replace(/-/g, '/')} 早於年初第一個交易日 ${d.start.replace(/-/g, '/')}，無法模擬`, true); return d; }
+  if (!d.closeDates || !d.closes) { showAsof('資料尚未包含每日收盤價，無法模擬指定日期：請先執行一次雪鴞同步程式上傳新版資料', true); return d; }
+  let idx = -1;
+  d.closeDates.forEach((x, i) => { if (x <= a) idx = i; });
+  if (idx < 0) { showAsof('找不到模擬日期當天以前的交易日，無法模擬', true); return d; }
+  const base = d.closeDates[idx], known = addDays(a, 30);
+  const prices = {}, events = {};
+  Object.keys(d.prices).forEach(c => {
+    const arr = d.closes[c] || [];
+    let pn = null, pnDate = '';
+    for (let i = Math.min(idx, arr.length - 1); i >= 0; i--) if (arr[i] != null) { pn = arr[i]; pnDate = d.closeDates[i]; break; }
+    prices[c] = { ...d.prices[c], pn, pnDate };
+  });
+  Object.keys(d.events).forEach(c => { events[c] = d.events[c].filter(e => !e.ex || e.ex <= known); });
+  showAsof(`模擬日期：${a.replace(/-/g, '/')}（以 ${base.replace(/-/g, '/')} 收盤計算，只用當天以前的資料）`);
+  return { ...d, base, prices, events };
+}
+
 function onData(d) {
+  d = applyAsof(d);
   DB = d; START = d.start; BASE = d.base;
   lib = buildLib(d);
   sel = sel.filter(c => lib[c] && lib[c].p0 && !lib[c].incomplete);
