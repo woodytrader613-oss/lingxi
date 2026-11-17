@@ -8,10 +8,11 @@
 <style>
 :root{
   --bg:#0E131C; --panel:#161C27; --panel2:#1E2633; --line:#2A3344; --line2:#3A4456;
-  --ink:#E8ECF2; --ink2:#C9D1DE; --muted:#AEB7C6; --dim:#6F7A8C; --accent:#F5C542; --warn:#FF9B8A;
+  --ink:#E8ECF2; --ink2:#C9D1DE; --muted:#AEB7C6; --dim:#6F7A8C; --accent:#F5C542; --warn:#FF9B8A; --good:#5FD39A;
   --font: Inter, 'Noto Sans TC', system-ui, sans-serif;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
 button,input,select{font-family:inherit}
 a{color:var(--accent)}
@@ -39,6 +40,16 @@ a{color:var(--accent)}
 .note{font-size:12px;line-height:1.6;color:var(--muted);margin:10px 0 0}
 .warnline{margin:10px 0 0;padding:8px 10px;border-radius:8px;border:1px solid #4A3A2A;background:#1E1912;font-size:12px;line-height:1.6;color:#E9CFA0}
 
+/* 輸入列 */
+.inrow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:6px 12px;border-radius:10px;background:var(--panel2)}
+.inrow+.inrow{margin-top:8px}
+.inrow label{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--ink2)}
+.inrow label small{font-size:11px;color:var(--dim)}
+.inbox{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+.inbox input{width:130px;height:40px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);background:#121823;color:var(--accent);font-size:17px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.inbox input.sm{width:72px}
+.inbox input:focus{outline:2px solid var(--accent);outline-offset:1px}
+
 /* KPI */
 .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .kpi{display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:10px;background:var(--panel2)}
@@ -53,15 +64,24 @@ a{color:var(--accent)}
 .rtable td.r,.rtable th.r{text-align:right;font-variant-numeric:tabular-nums}
 .rtable small{color:var(--muted);font-size:11px}
 
+/* DEMO 切換 */
+.demo{margin-bottom:10px;padding:10px;border-radius:10px;border:1px dashed #6b5a22;background:#17140B}
+.demo .lbl{font-size:11px;color:var(--accent);margin-bottom:6px}
+.seg{display:flex;padding:3px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.seg button{flex:1;min-height:36px;padding:0 6px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#0E131C}
+.swrow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;margin-top:6px;font-size:13px;color:var(--ink2)}
+.switch{position:relative;width:52px;height:30px;border-radius:15px;border:0;background:var(--line2);cursor:pointer;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;transition:left .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{left:25px}
+
 /* cards */
-.amountbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;padding:10px 12px;border-radius:10px;background:var(--panel2);font-size:13px;color:var(--muted)}
-.amountbar b{color:var(--accent);font-size:16px}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.card{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-height:104px;padding:8px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--ink);text-align:left;cursor:pointer;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.card{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-height:96px;padding:8px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--ink);text-align:left;cursor:pointer;min-width:0}
 .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .card .mh{display:flex;align-items:center;justify-content:space-between;gap:4px}
 .card .mh b{font-size:16px}
-.card .mh small{font-size:11px;color:var(--dim)}
 .badge{font-size:11px;font-weight:700;color:#0E131C;background:var(--accent);border-radius:4px;padding:1px 5px}
 .pick{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:6px;border:1px solid var(--c);background:color-mix(in srgb,var(--c) 12%,transparent)}
 .pick b{font-size:13px;color:var(--c)}
@@ -75,7 +95,18 @@ a{color:var(--accent)}
 .btn.ghost{background:transparent}
 .btn:disabled{opacity:.4;cursor:default}
 .empty{padding:24px 12px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
-.disc{margin:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-size:12px;line-height:1.6;color:var(--muted)}
+
+/* 退休試算 */
+.ret{margin-top:10px;padding:14px;border-radius:12px;border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.ret .k{font-size:13px;color:var(--muted)}
+.ret .date{display:block;margin-top:4px;font-size:26px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.ret .sub{margin-top:4px;font-size:13px;color:var(--ink2)}
+.ret.done{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,transparent)}
+.ret.done .date{color:var(--good)}
+.ret.na{border-color:var(--line2);background:var(--panel2)}
+.ret.na .date{color:var(--ink2);font-size:18px}
+.steps2{margin-top:10px;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.steps2 b{color:var(--ink);font-weight:600;text-align:right}
 
 /* sheet（月份設定） */
 .sheet-bg{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -85,8 +116,7 @@ a{color:var(--accent)}
 .sheet-h{display:flex;align-items:center;justify-content:space-between;padding:6px 6px 6px 16px;border-bottom:1px solid var(--line)}
 .sheet-h b{font-size:16px}
 .sheet-c{padding:12px 16px;overflow:auto}
-.field{display:flex;flex-direction:column;gap:6px;margin-top:12px}
-.field:first-child{margin-top:0}
+.field{display:flex;flex-direction:column;gap:6px}
 .field label{font-size:12px;color:var(--muted)}
 .input{height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:16px}
 .input:focus{outline:2px solid var(--accent);outline-offset:1px}
@@ -108,7 +138,6 @@ a{color:var(--accent)}
 .chosen dt{color:var(--muted)}
 .chosen dd{margin:0;font-variant-numeric:tabular-nums}
 .chk{display:flex;align-items:center;gap:10px;min-height:44px;margin-top:8px;font-size:13px;color:var(--ink2);cursor:pointer}
-.chk[hidden]{display:none}
 .chk input{width:20px;height:20px;accent-color:var(--accent)}
 
 /* explain */
@@ -125,7 +154,6 @@ table.doc th{background:var(--panel);color:var(--muted);font-weight:600;text-ali
 table.doc td{padding:8px 10px;border-bottom:1px solid #222B3A;vertical-align:top;color:#D5DBE5}
 table.doc tr:last-child td{border-bottom:0}
 table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.disclaimer{margin-top:32px;padding:14px 16px;border-radius:12px;border:1px solid var(--line);font-size:13px;color:var(--muted);line-height:1.7}
 
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);max-width:340px;padding:14px 16px;border-radius:12px;background:#2A3344;color:var(--ink);font-size:15px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:80}
 .toast.show{opacity:1}
@@ -172,22 +200,53 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
           </div>
         </div>
         <div class="app-body">
-          <section id="resultPanel" class="panel">
-            <div class="sec-title"><h2>12 個月後的預估表現</h2><span id="dataLabel"></span></div>
-            <div id="result"><div class="empty">資料載入中…</div></div>
-            <p class="disc" style="margin-top:10px">依歷史資料試算，不代表未來績效，不構成投資建議。</p>
-            <a class="embedhow" href="#how">計算說明 <span aria-hidden="true">›</span></a>
-          </section>
-
+          <!-- 1. 每月配置金額 + 年度配置 -->
           <section id="cardsPanel" class="panel">
-            <div class="sec-title"><h2>年度配置</h2><span id="rangeLabel"></span></div>
-            <div class="amountbar"><span>每月配置金額</span><span><b id="amountLabel">—</b> 元</span></div>
+            <div class="sec-title"><h2>年度配置</h2><span>1 月～12 月</span></div>
+            <div class="inrow">
+              <label for="amount">每月配置金額<small>12 個月共用</small></label>
+              <span class="inbox"><input id="amount" inputmode="numeric" autocomplete="off"> 元</span>
+            </div>
             <div class="grid" id="grid"></div>
-            <p class="note">點月份卡片，選這個月要買的 ETF（每月一檔）。每月配置金額在卡片裡設定，12 個月共用同一個金額。</p>
+            <p class="note">點月份卡片，選這個月要買的 ETF（每月一檔）。同一檔選幾個月，就占幾份比重。</p>
             <div class="btnrow">
               <button type="button" class="btn" id="btnShare">複製分享連結</button>
               <button type="button" class="btn ghost" id="btnClear">全部清除</button>
             </div>
+          </section>
+
+          <!-- 2. 長期配置的預估表現 -->
+          <section id="resultPanel" class="panel">
+            <div class="sec-title"><h2>長期配置的預估表現</h2><span id="dataLabel"></span></div>
+            <div class="demo" id="demoBar" hidden>
+              <div class="lbl">DEMO：預估算法</div>
+              <div class="seg" id="methodSeg" role="group" aria-label="預估算法">
+                <button type="button" data-m="m10" aria-pressed="true">近 10 年平均</button>
+                <button type="button" data-m="amt" aria-pressed="false">歷年配息平均</button>
+                <button type="button" data-m="yld" aria-pressed="false">歷年殖利率平均</button>
+              </div>
+              <div class="swrow"><span>退休試算納入「每月配置金額」持續投入</span><button type="button" class="switch" id="swContrib" role="switch" aria-checked="true" aria-label="納入每月投入"></button></div>
+            </div>
+            <div id="result"><div class="empty">資料載入中…</div></div>
+          </section>
+
+          <!-- 3. 退休試算 -->
+          <section id="retirePanel" class="panel">
+            <div class="sec-title"><h2>退休試算</h2><span>用股息支應每月目標</span></div>
+            <div class="inrow">
+              <label for="goalX">每月現金流目標<small>以今天的購買力計</small></label>
+              <span class="inbox"><input id="goalX" inputmode="numeric" autocomplete="off"> 元</span>
+            </div>
+            <div class="inrow">
+              <label for="stockZ">目前股票庫存市值<small>假設全數換成上面的配置</small></label>
+              <span class="inbox"><input id="stockZ" inputmode="numeric" autocomplete="off"> 元</span>
+            </div>
+            <div class="inrow">
+              <label for="inflation">通膨率<small>每年；0 表示不考慮</small></label>
+              <span class="inbox"><input id="inflation" class="sm" inputmode="decimal" autocomplete="off"> %</span>
+            </div>
+            <div id="retire"></div>
+            <a class="embedhow" href="#how">計算說明 <span aria-hidden="true">›</span></a>
           </section>
         </div>
       </div>
@@ -196,36 +255,47 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 
   <article class="explain" id="how">
     <h2>計算說明</h2>
-    <p class="lead">從本月開始的 12 個月，每月用相同金額買進一檔 ETF（各月可以不同）。上方兩個數字依各檔的歷史資料年化，再依投入金額加權平均，代表「這組配置長期一年大概的表現」，不是 12 個月後帳戶的實際結果。</p>
-    <h3>公式</h3>
-    <div class="formula">每月配置金額 <em>A</em>；有設定的月份數 <em>k</em>
-年度總投入 = A × k
-各檔年化報酬率 <em>X</em> = (最近月底還原收盤 ÷ 起始月底還原收盤) ^ (12 ÷ 月數) − 1
-各檔預估殖利率 <em>Y</em> = 近 3 期單期殖利率的中位數 × 一年配息次數
-  單期殖利率 = 現金股利 ÷ 除息前收盤價（＝除息參考價 ＋ 現金股利）
-預估報酬率 = Σ(各月投入 × 該月標的 X) ÷ 年度總投入
-預估殖利率 = Σ(各月投入 × 該月標的 Y) ÷ 年度總投入</div>
+    <p class="lead">每月用相同金額買進一檔 ETF（各月可以不同），用各檔的歷史資料估算這組配置長期一年的報酬率與殖利率，再推算股息要多久才能支應你設定的每月現金流。本頁全部是依歷史資料推估的數值，不使用投信已公告的配息。</p>
+    <h3>長期配置的預估表現</h3>
+    <div class="formula">每月配置金額 <em>A</em>；有設定的月份數 <em>k</em>；年度總投入 = A × k
+預估報酬率 <em>M</em> = Σ(各月投入 × 該月標的年化報酬率) ÷ 年度總投入
+預估殖利率 <em>N</em> = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
+（每月金額相同，等於有設定月份的平均；同一檔選幾個月就占幾份）</div>
+    <div class="tbl-wrap"><table class="doc"><thead><tr><th>算法</th><th>年化報酬率</th><th>預估殖利率</th></tr></thead><tbody>
+      <tr><td>近 10 年平均（預設）</td><td>近 10 年還原股價年化；上市未滿 10 年用上市至今</td><td>近 10 年平均每年配息 ÷ 最新收盤價</td></tr>
+      <tr><td>歷年配息平均</td><td>上市至今還原股價年化</td><td>歷年平均每年配息 ÷ 最新收盤價</td></tr>
+      <tr><td>歷年殖利率平均</td><td>上市至今還原股價年化</td><td>歷年「每年殖利率」的平均</td></tr>
+    </tbody></table></div>
     <ul>
-      <li>還原收盤價已把配息加回去，所以「預估報酬率」已經包含配息，與「預估殖利率」不能相加。</li>
-      <li>起始月：上市當月月底收盤；2010 年以前上市的 ETF，資料從 2010 年 1 月起算。結束月：最近一個已結束月份的月底收盤。每檔的資料期間列在本頁下方的明細。</li>
-      <li>近 3 期只採用投信已公告的配息；不足 3 期時有幾期用幾期。從未配息的 ETF，殖利率以 0% 計。</li>
-      <li>每月金額相同，所以兩個預估數字等於「有設定的月份」各檔數字的平均；同一檔選了幾個月，就占幾份權重。</li>
-      <li>不計交易成本、稅金與匯率；不考慮每月買進時間不同造成的差異。</li>
+      <li>還原股價已把配息加回去，所以預估報酬率已包含配息，與預估殖利率不能相加。</li>
+      <li>年化報酬率用月底還原收盤價計算，算到最近一個已結束的月份；2010 年以前上市的 ETF，資料從 2010 年 1 月起算。</li>
+      <li>每年配息以除息日的年份歸年，算到去年為止（今年還沒過完不算）；中間某年沒配息以 0 計。從未配息的 ETF，殖利率以 0% 計。</li>
+    </ul>
+    <h3>退休試算</h3>
+    <div class="formula">需要的股票市值 <em>Y</em> = 每月現金流目標 <em>X</em> × 12 ÷ 預估殖利率 N
+考慮通膨 <em>i</em>：t 年後的目標 = X × (1 + i)^t，需要的市值同步放大
+資產成長：目前市值 <em>Z</em> 以預估報酬率 M 每月複利成長
+          （納入每月投入時，每個月底再加上每月配置金額 A）
+資產市值第一次 ≥ 需要市值的那一天 = 可以退休的日期；R = 距今的年數</div>
+    <ul>
+      <li>假設目前股票庫存全數換成上方年度配置的 ETF，並依配置比例持有；報酬率含配息，等於累積期間股息全部再投入。</li>
+      <li>月複利率 = (1 + M)^(1/12) − 1；先找到達成的月份，再於該月內依複利曲線推算到日。</li>
+      <li>未計交易成本、稅金與二代健保補充保費；超過 100 年視為無法達成。</li>
     </ul>
     <h3>本次計算明細</h3>
-    <div class="tbl-wrap"><table class="doc" id="traceTable"><thead><tr><th>標的</th><th>月份</th><th>投入</th><th>年化報酬率（資料期間）</th><th>預估殖利率（採用期數）</th></tr></thead><tbody></tbody></table></div>
+    <div class="tbl-wrap"><table class="doc" id="traceTable"><thead><tr><th>標的</th><th>月份</th><th>投入</th><th>年化報酬率</th><th>預估殖利率</th></tr></thead><tbody></tbody></table></div>
     <div id="traceSum"></div>
     <h3>不予計算的標的</h3>
     <p>下列 ETF 不提供預估，選單中反灰、不能選：</p>
     <ul>
       <li><b>槓桿型與反向型</b>（代號 L、R 結尾，或名稱含「正2」「反1」等）：每日追蹤倍數報酬，長期報酬受波動耗損影響，歷史年化報酬不具參考性。</li>
       <li><b>上市未滿 1 年</b>：資料期間太短，年化後的數字會被放大或縮小。</li>
-      <li><b>配息資料不足</b>或<b>缺少還原價資料</b>：資料庫尚未取得足夠資料。</li>
+      <li><b>配息歷史不足</b>：去年以前沒有配息紀錄，無法計算歷年平均。</li>
+      <li><b>缺少還原價資料</b>：資料庫尚未取得足夠資料。</li>
     </ul>
     <p id="excludeCount"></p>
     <h3>資料來源</h3>
-    <p>ETF 清單、上市日、還原月 K 線與配息資料（除息日、現金股利、除息參考價、一年配息次數）皆來自雪鴞 API，涵蓋上市與上櫃 ETF，每個交易日更新。</p>
-    <div class="disclaimer">依歷史資料試算，不代表未來績效，不構成投資建議。過去的報酬與配息不保證未來表現；實際配息以投信公告為準。投資前請詳閱各 ETF 公開說明書。</div>
+    <p>ETF 清單、還原月 K 線、收盤價與歷年配息資料（除息日、現金股利、除息參考價、一年配息次數）皆來自雪鴞 API，涵蓋上市與上櫃 ETF，每個交易日更新。</p>
   </article>
 </main>
 
@@ -234,17 +304,13 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
     <div class="sheet-h"><b id="sheetTitle">設定</b><button class="iconbtn" type="button" id="sheetClose" aria-label="關閉"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="sheet-c">
       <div class="field">
-        <label for="amount">每月配置金額（12 個月共用）</label>
-        <input class="input" id="amount" inputmode="numeric" autocomplete="off">
-      </div>
-      <div class="field">
         <label for="search">搜尋代號或名稱（上市／上櫃 ETF）</label>
         <input class="input" id="search" placeholder="例：00919、高股息" autocomplete="off">
       </div>
       <div class="quick" id="quick" aria-label="常用標的"></div>
       <div id="results" class="results" aria-label="搜尋結果"></div>
       <div id="chosen"></div>
-      <label class="chk" id="fillWrap"><input type="checkbox" id="fillEmpty">同時套用到其他還沒設定的月份</label>
+      <label class="chk" id="fillWrap"><input type="checkbox" id="fillEmpty"><span id="fillText">同時套用到其他還沒設定的月份</span></label>
       <div class="btnrow">
         <button type="button" class="btn ghost" id="sheetClear">清除這個月</button>
         <button type="button" class="btn primary" id="sheetOk">確定</button>
@@ -258,9 +324,11 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 /* ===== 嵌入模式（APP 內 WebView）=====
    網址加 ?embed=1：隱藏網頁標題列、去掉手機外框、禁止縮放與長按選單。
    ?embed=1&header=1：保留網頁標題列（返回鍵會通知 APP 關閉此頁）。
+   ?demo=1：顯示算法切換與「納入每月投入」開關（給老闆 DEMO）。
    通知 APP 的訊息（JSON）：{type:'ready'|'error'|'close'|'plan', ...} */
 const QS = new URLSearchParams(location.search);
 const EMBED_MODE = QS.get('embed') === '1';
+const DEMO = QS.get('demo') === '1';
 if (EMBED_MODE) {
   document.documentElement.classList.add('embed');
   if (QS.get('header') === '1') document.documentElement.classList.add('embed-header');
@@ -277,34 +345,87 @@ function postToApp(obj) {
 function closeToApp() { if (!postToApp({ type: 'close' }) && history.length > 1) history.back(); }
 function hideLoader() { const l = document.getElementById('loader'); if (l) l.classList.add('done'); }
 
-/* ===== 計算核心（唯一計算標準）=====
-   plan：{ amount: 每月金額, months: { 1..12: 'ETF 代號' } }（以「月份」為鍵，滾動 12 個月剛好各出現一次）
-   fc：資料的 forecast（每檔 cagr、yield、exclude…） */
-function forecastPlan(plan, fc, window12) {
-  const A = plan.amount;
-  const rows = [], byCode = {};
+/* ===== 計算核心（唯一計算標準）===== */
+const HARD_EXCLUDE = ['槓桿型或反向型', '上市未滿 1 年', '缺少還原價資料'];
+// 每檔在指定算法下的年化報酬率 x、預估殖利率 y；不能算回傳 { reason }
+function metricsOf(code, method, d) {
+  const f = d.forecast[code];
+  if (!f) return { reason: '查無此標的' };
+  if (f.exclude && HARD_EXCLUDE.includes(f.exclude)) return { reason: f.exclude };
+  if (f.cagr == null) return { reason: '缺少還原價資料' };
+  const x = method === 'm10' ? (f.cagr10 != null ? f.cagr10 : f.cagr) : f.cagr;
+  const xFrom = method === 'm10' ? (f.cagr10From || f.cagrFrom) : f.cagrFrom;
+  const e = (d.est || {})[code], pn = ((d.prices || {})[code] || {}).pn;
+  let y;
+  if (e && pn > 0) {
+    const n = e[0], per = method === 'm10' ? e[4] : method === 'amt' ? e[1] : e[2];
+    if (per == null) return { reason: '配息歷史不足' };
+    y = n * per / pn;
+  } else if (f.noDiv) y = 0;
+  else return { reason: '配息歷史不足' };
+  return { x, y, xFrom, xTo: f.cagrTo, years: e ? e[3] : 0, perYear: e ? e[0] : 0, noDiv: !e && !!f.noDiv };
+}
+// plan：{ amount, months: { 1..12: 代號 } }
+function forecastPlan(plan, method, d) {
+  const A = plan.amount, rows = [], byCode = {}, skipped = [];
   let total = 0, sumX = 0, sumY = 0;
-  const skipped = [];
-  window12.forEach(w => {
-    const code = plan.months[w.m];
-    if (!code) return;
-    const f = fc[code];
-    if (!f || f.exclude || f.cagr == null || f.yield == null) { skipped.push({ ...w, code, reason: f ? (f.exclude || '資料不足') : '查無此標的' }); return; }
-    total += A; sumX += A * f.cagr; sumY += A * f.yield;
-    rows.push({ ...w, code, x: f.cagr, y: f.yield });
-    if (!byCode[code]) byCode[code] = { code, n: 0, invest: 0, x: f.cagr, y: f.yield, months: [] };
-    byCode[code].n += 1; byCode[code].invest += A; byCode[code].months.push(w.m);
-  });
-  return { amount: A, k: rows.length, total, ret: total ? sumX / total : null, yld: total ? sumY / total : null,
-    sumX, sumY, rows, groups: Object.values(byCode), skipped };
+  for (let m = 1; m <= 12; m++) {
+    const code = plan.months[m];
+    if (!code) continue;
+    const r = metricsOf(code, method, d);
+    if (r.reason) { skipped.push({ m, code, reason: r.reason }); continue; }
+    total += A; sumX += A * r.x; sumY += A * r.y;
+    rows.push({ m, code, ...r });
+    if (!byCode[code]) byCode[code] = { code, n: 0, invest: 0, ...r, months: [] };
+    byCode[code].n += 1; byCode[code].invest += A; byCode[code].months.push(m);
+  }
+  return { amount: A, k: rows.length, total, M: total ? sumX / total : null, N: total ? sumY / total : null,
+    groups: Object.values(byCode), skipped };
+}
+/* 退休試算：找出資產 V(t) 第一次 ≥ 需要市值 Y(t) 的日期
+   V：Z 以 M 月複利，納入投入時每月底加 A；Y(t) = X × 12 × (1+i)^(t 年) ÷ N */
+function retirePlan(o) {
+  const { X, Z, M, N, A, i, include, today } = o;
+  if (!(X > 0)) return { status: 'input', msg: '請輸入每月現金流目標' };
+  if (!(N > 0)) return { status: 'na', msg: '這組配置的預估殖利率為 0%，無法靠股息達成目標' };
+  const Y0 = X * 12 / N;
+  const need = tm => Y0 * Math.pow(1 + i, tm / 12);
+  if (Z >= Y0) return { status: 'done', Y0, Yt: Y0, R: 0, date: today, months: 0 };
+  const rm = Math.pow(1 + M, 1 / 12) - 1, add = include ? A : 0;
+  let V = Z;
+  for (let k = 1; k <= 1200; k++) {
+    const Vk = V * (1 + rm) + add;
+    if (Vk >= need(k)) {
+      // 第 k 個月內：資產依複利曲線成長，當月投入在月底才加入；月中靠複利就能達到時，用二分法找到日
+      let f = 1;
+      if (V * (1 + rm) >= need(k)) {
+        let lo = 0, hi = 1;
+        for (let it = 0; it < 60; it++) { const mid = (lo + hi) / 2; if (V * Math.pow(1 + rm, mid) >= need(k - 1 + mid)) hi = mid; else lo = mid; }
+        f = hi;
+      }
+      const start = addMonths(today, k - 1), end = addMonths(today, k);
+      const days = Math.round((end - start) / 86400000 * f);
+      const dt = new Date(start.getFullYear(), start.getMonth(), start.getDate() + days);
+      const R = (dt - today) / (365.2425 * 86400000);
+      return { status: 'ok', Y0, Yt: need(k - 1 + f), R, date: dt, months: k };
+    }
+    V = Vk;
+  }
+  return { status: 'na', Y0, msg: '依目前設定，100 年內無法達成' };
+}
+function addMonths(d, n) {
+  const y = d.getFullYear(), m = d.getMonth() + n, day = d.getDate();
+  const last = new Date(y, m + 1, 0).getDate();
+  return new Date(y, m, Math.min(day, last));
 }
 
 /* ===== 畫面 ===== */
 const PALETTE = ['#F5C542', '#3DD6C4', '#FF7A9A', '#7DB3FF', '#FFA24D', '#C3A2FF', '#8BE36A', '#FF8F6B', '#5FD0FF', '#E58BFF', '#D4C26A', '#9AA8FF'];
 const QUICK = ['0056', '00878', '00919', '0050', '006208', '00713', '00929', '00940'];
-const STORE_KEY = 'lingxi_plan_v2';
-const DEFAULT_AMOUNT = 10000;
-let DB = null, FC = {}, NAMES = {}, WIN = [], plan = { amount: DEFAULT_AMOUNT, months: {} };
+const STORE_KEY = 'lingxi_plan_v3';
+const METHOD_NAME = { m10: '近 10 年平均', amt: '歷年配息平均', yld: '歷年殖利率平均' };
+let DB = null, FC = {}, NAMES = {};
+let plan = { amount: 10000, months: {} }, goal = { x: 30000, z: 1000000, inf: 0 }, method = 'm10', includeA = true;
 const $ = id => document.getElementById(id);
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2400); }
@@ -312,21 +433,15 @@ function fmt0(x) { return Math.round(x).toLocaleString('en-US'); }
 const pct = (x, sign) => x == null ? '—' : (sign && x >= 0 ? '+' : '') + (x * 100).toFixed(2) + '%';
 const ym = s => s ? s.replace('-', '/') : '';
 const FREQ = { 12: '月配', 6: '雙月配', 4: '季配', 2: '半年配', 1: '年配' };
-function freqOf(f) { return f.noDiv ? '不配息' : (FREQ[f.perYear] || ''); }
-
-// 滾動 12 個月：從本月（台北時間）開始
+function num(v) { const x = parseFloat(String(v).replace(/[^\d.]/g, '')); return isFinite(x) ? x : 0; }
 function taipeiToday() {
-  const s = new Date().toLocaleString('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' });
-  return s.slice(0, 10);
+  const s = new Date().toLocaleString('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).slice(0, 10);
+  return new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
 }
-function makeWindow(today) {
-  let y = +today.slice(0, 4), m = +today.slice(5, 7);
-  const out = [];
-  for (let i = 0; i < 12; i++) { out.push({ y, m, i }); m++; if (m > 12) { m = 1; y++; } }
-  return out;
-}
+const TODAY = taipeiToday();
+const fmtDate = d => `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
 
-// 儲存：瀏覽器 localStorage；分享：?plan=金額:月-代號,月-代號
+// 儲存與分享：?plan=金額:月-代號,…&x=目標&z=市值&inf=通膨%
 function encodePlan(p) {
   const parts = Object.keys(p.months).filter(m => p.months[m]).sort((a, b) => a - b).map(m => `${m}-${p.months[m]}`);
   return `${Math.round(p.amount)}:${parts.join(',')}`;
@@ -338,148 +453,189 @@ function decodePlan(s) {
   (m[2] || '').split(',').forEach(x => { const t = x.match(/^(\d{1,2})-([0-9A-Za-z]+)$/); if (t && +t[1] >= 1 && +t[1] <= 12) out.months[+t[1]] = t[2].toUpperCase(); });
   return out;
 }
-function savePlan() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(plan)); } catch (e) {}
-  postToApp({ type: 'plan', plan: encodePlan(plan) });
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ plan, goal })); } catch (e) {}
+  postToApp({ type: 'plan', plan: encodePlan(plan), x: goal.x, z: goal.z, inf: goal.inf });
 }
-function loadPlan() {
+function load() {
+  let src = '';
+  try {
+    let s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (!s) { const o = JSON.parse(localStorage.getItem('lingxi_plan_v2') || 'null'); if (o) s = { plan: o }; }
+    if (s && s.plan && s.plan.months) { plan = { amount: +s.plan.amount || 10000, months: s.plan.months }; src = 'store'; }
+    if (s && s.goal) goal = { ...goal, ...s.goal };
+  } catch (e) {}
   const fromUrl = decodePlan(QS.get('plan'));
-  if (fromUrl) { plan = fromUrl; return 'url'; }
-  try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (s && s.amount && s.months) { plan = { amount: +s.amount, months: s.months }; return 'store'; } } catch (e) {}
-  return '';
+  if (fromUrl) { plan = fromUrl; src = 'url'; }
+  if (QS.has('x')) goal.x = num(QS.get('x'));
+  if (QS.has('z')) goal.z = num(QS.get('z'));
+  if (QS.has('inf')) goal.inf = num(QS.get('inf'));
+  return src;
 }
 
 function colorMap() {
   const map = {}; let i = 0;
-  WIN.forEach(w => { const c = plan.months[w.m]; if (c && !(c in map)) map[c] = PALETTE[i++ % PALETTE.length]; });
+  for (let m = 1; m <= 12; m++) { const c = plan.months[m]; if (c && !(c in map)) map[c] = PALETTE[i++ % PALETTE.length]; }
   return map;
 }
 function render() {
-  const r = forecastPlan(plan, FC, WIN);
+  const r = forecastPlan(plan, method, DB);
   const col = colorMap();
-  $('amountLabel').textContent = fmt0(plan.amount);
-  const a = WIN[0], b = WIN[11];
-  $('rangeLabel').textContent = `${a.y}/${a.m}～${b.y}/${b.m}`;
-  $('grid').innerHTML = WIN.map(w => {
-    const code = plan.months[w.m];
-    const f = code ? FC[code] : null;
-    const yearTag = (w.i === 0 || w.m === 1) ? `<small>${w.y}</small>` : '';
+  const nowM = TODAY.getMonth() + 1;
+  $('grid').innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+    const code = plan.months[m];
+    const mt = code ? metricsOf(code, method, DB) : null;
     let body;
-    if (!code) body = '<span class="addhint">＋ 設定</span>';
-    else if (!f || f.exclude) body = `<div class="pick bad"><b>${esc(code)}</b><span>${esc(f ? f.exclude : '查無此標的')}</span><em>不列入計算</em></div>`;
+    if (!code) body = '<span class="addhint">＋ 選 ETF</span>';
+    else if (mt.reason) body = `<div class="pick bad"><b>${esc(code)}</b><span>${esc(mt.reason)}</span><em>不列入計算</em></div>`;
     else body = `<div class="pick" style="--c:${col[code]}"><b>${esc(code)}</b><span>${esc(NAMES[code] || '')}</span><em>$${fmt0(plan.amount)}</em></div>`;
-    return `<button type="button" class="card" data-m="${w.m}" aria-label="${w.y} 年 ${w.m} 月${code ? '，' + code : '，尚未設定'}"><div class="mh"><b>${w.m} 月</b>${w.i === 0 ? '<span class="badge">本月</span>' : yearTag}</div>${body}</button>`;
+    return `<button type="button" class="card" data-m="${m}" aria-label="${m} 月${code ? '，' + code : '，尚未設定'}"><div class="mh"><b>${m} 月</b>${m === nowM ? '<span class="badge">本月</span>' : ''}</div>${body}</button>`;
   }).join('');
   $('grid').querySelectorAll('.card').forEach(c => c.onclick = () => openSheet(+c.dataset.m));
 
+  const skipNote = r.skipped.length ? `<p class="warnline">有 ${r.skipped.length} 個月份的標的不列入計算（${esc([...new Set(r.skipped.map(s => s.code + ' ' + s.reason))].join('、'))}），年度總投入只算有效月份。</p>` : '';
   if (!r.k) {
-    $('result').innerHTML = `<div class="kpis"><div class="kpi"><span>預估報酬率</span><b>—</b><small>年化</small></div><div class="kpi"><span>預估殖利率</span><b>—</b><small>年化</small></div></div>
-      <p class="note">點下方月份卡片，選擇每個月要買的 ETF，這裡就會算出這組配置的預估表現。</p>
-      ${r.skipped.length ? `<p class="warnline">有 ${r.skipped.length} 個月份的標的不列入計算（${esc([...new Set(r.skipped.map(s => s.code + ' ' + s.reason))].join('、'))}）。</p>` : ''}`;
+    $('result').innerHTML = `<div class="kpis"><div class="kpi"><span>預估報酬率</span><b>—</b><small>年化，已含配息</small></div><div class="kpi"><span>預估殖利率</span><b>—</b><small>年化</small></div></div>
+      <p class="note">在上方月份卡片選擇每個月要買的 ETF，這裡就會算出這組配置的預估表現。</p>${skipNote}`;
   } else {
     $('result').innerHTML = `
       <div class="kpis">
-        <div class="kpi"><span>預估報酬率</span><b style="color:var(--accent)">${pct(r.ret, true)}</b><small>年化，已含配息</small></div>
-        <div class="kpi"><span>預估殖利率</span><b>${pct(r.yld)}</b><small>年化，近 3 期配息</small></div>
+        <div class="kpi"><span>預估報酬率</span><b style="color:var(--accent)">${pct(r.M, true)}</b><small>年化，已含配息</small></div>
+        <div class="kpi"><span>預估殖利率</span><b>${pct(r.N)}</b><small>年化</small></div>
       </div>
       <div class="total"><span>年度總投入（${r.k} 個月 × $${fmt0(r.amount)}）</span><b>$${fmt0(r.total)}</b></div>
       <table class="rtable"><thead><tr><th>標的</th><th class="r">投入</th><th class="r">年化報酬</th><th class="r">殖利率</th></tr></thead><tbody>
         ${r.groups.map(g => `<tr><td><b style="color:${col[g.code]}">${esc(g.code)}</b> <small>${g.n} 個月</small><br><small>${esc(NAMES[g.code] || '')}</small></td><td class="r">$${fmt0(g.invest)}</td><td class="r">${pct(g.x, true)}</td><td class="r">${pct(g.y)}</td></tr>`).join('')}
-      </tbody></table>
-      ${r.skipped.length ? `<p class="warnline">有 ${r.skipped.length} 個月份的標的不列入計算（${esc([...new Set(r.skipped.map(s => s.code + ' ' + s.reason))].join('、'))}），總投入只算有效月份。</p>` : ''}
-      <p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。這是這組配置「長期一年大概多少」的歷史試算，不是 12 個月後的實際結果。</p>`;
+      </tbody></table>${skipNote}
+      <p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。${DEMO ? `目前算法：${METHOD_NAME[method]}。` : ''}</p>`;
   }
+  renderRetire(r);
   renderTrace(r, col);
+}
+function renderRetire(r) {
+  const box = $('retire');
+  if (!r.k) { box.innerHTML = '<p class="note">先在上方設定年度配置，才能推算退休日期。</p>'; return; }
+  const res = retirePlan({ X: goal.x, Z: goal.z, M: r.M, N: r.N, A: plan.amount, i: goal.inf / 100, include: includeA, today: TODAY });
+  if (res.status === 'input') { box.innerHTML = `<p class="note">${esc(res.msg)}</p>`; return; }
+  const facts = `<div class="steps2">
+      ${res.Y0 ? `<span>需要的股票市值 Y</span><b>$${fmt0(res.Y0)}</b>` : ''}
+      <span>預估報酬率 M／殖利率 N</span><b>${pct(r.M, true)}／${pct(r.N)}</b>
+      <span>每月持續投入</span><b>${includeA ? '$' + fmt0(plan.amount) : '不納入'}</b>
+      ${goal.inf > 0 && res.Yt ? `<span>退休當時需要市值</span><b>$${fmt0(res.Yt)}</b>` : ''}</div>`;
+  if (res.status === 'na') { box.innerHTML = `<div class="ret na"><span class="k">可以退休的日期</span><span class="date">${esc(res.msg)}</span>${facts}</div>`; return; }
+  if (res.status === 'done') { box.innerHTML = `<div class="ret done"><span class="k">可以退休的日期</span><span class="date">現在就可以退休</span><div class="sub">目前市值 $${fmt0(goal.z)} 已達需要的 $${fmt0(res.Y0)}</div>${facts}</div>`; return; }
+  const totalM = Math.round(res.R * 12), yrs = Math.floor(totalM / 12), mos = totalM % 12;
+  box.innerHTML = `<div class="ret"><span class="k">可以退休的日期</span><span class="date">${fmtDate(res.date)}</span>
+    <div class="sub">還要約 ${res.R.toFixed(1)} 年（${yrs ? yrs + ' 年' : ''}${mos ? mos + ' 個月' : ''}）</div>${facts}</div>`;
 }
 function renderTrace(r, col) {
   const tb = $('traceTable').querySelector('tbody');
-  tb.innerHTML = r.groups.map(g => {
-    const f = FC[g.code];
-    const per = (f.periods || []).map(p => `${ym(p.ex.slice(0, 7))} ${p.dps}÷${p.pre}`).join('；');
-    return `<tr><td><b style="color:${col[g.code]}">${esc(g.code)}</b> ${esc(NAMES[g.code] || '')}</td><td>${g.months.map(m => m + ' 月').join('、')}</td><td class="num">$${fmt0(g.invest)}</td>
-      <td class="num">${pct(f.cagr, true)}<br><small>${ym(f.cagrFrom)}～${ym(f.cagrTo)}（${f.cagrMonths} 個月）</small></td>
-      <td class="num">${pct(f.yield)}<br><small>${f.noDiv ? '從未配息' : `${freqOf(f)}・${f.yieldN} 期中位數 × ${f.perYear}`}${per ? '<br>' + esc(per) : ''}</small></td></tr>`;
-  }).join('') || '<tr><td colspan="5" style="color:var(--muted)">尚未設定任何月份</td></tr>';
-  $('traceSum').innerHTML = r.k ? `<div class="formula">年度總投入 = ${fmt0(r.amount)} × ${r.k} = ${fmt0(r.total)}
-預估報酬率 = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.x * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.ret, true)}</em>
-預估殖利率 = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.y * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.yld)}</em></div>` : '';
+  tb.innerHTML = r.groups.map(g => `<tr><td><b style="color:${col[g.code]}">${esc(g.code)}</b> ${esc(NAMES[g.code] || '')}</td><td>${g.months.map(m => m + ' 月').join('、')}</td><td class="num">$${fmt0(g.invest)}</td>
+      <td class="num">${pct(g.x, true)}<br><small>${ym(g.xFrom)}～${ym(g.xTo)}</small></td>
+      <td class="num">${pct(g.y)}<br><small>${g.noDiv ? '從未配息' : `${FREQ[g.perYear] || ''}・${g.years} 年資料`}</small></td></tr>`).join('')
+    || '<tr><td colspan="5" style="color:var(--muted)">尚未設定任何月份</td></tr>';
+  $('traceSum').innerHTML = r.k ? `<div class="formula">算法：${METHOD_NAME[method]}
+年度總投入 = ${fmt0(r.amount)} × ${r.k} = ${fmt0(r.total)}
+預估報酬率 M = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.x * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.M, true)}</em>
+預估殖利率 N = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.y * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.N)}</em>
+需要的股票市值 Y = ${fmt0(goal.x)} × 12 ÷ ${(r.N * 100).toFixed(2)}% = <em>${r.N > 0 ? fmt0(goal.x * 12 / r.N) : '—'}</em></div>` : '';
 }
 
-/* ===== 月份設定 ===== */
+/* ===== 月份設定（只選 ETF）===== */
 let editM = null, draftCode = null;
 function openSheet(m) {
   editM = m; draftCode = plan.months[m] || null;
-  const w = WIN.find(x => x.m === m);
-  $('sheetTitle').textContent = `${w.y} 年 ${m} 月`;
-  $('amount').value = fmt0(plan.amount);
+  $('sheetTitle').textContent = `${m} 月要買的 ETF`;
   $('search').value = '';
   $('fillEmpty').checked = false;
-  const empties = WIN.filter(x => x.m !== m && !plan.months[x.m]).length;
+  let empties = 0;
+  for (let x = 1; x <= 12; x++) if (x !== m && !plan.months[x]) empties++;
   $('fillWrap').hidden = !empties;
-  $('fillWrap').lastChild.textContent = `同時套用到其他 ${empties} 個還沒設定的月份`;
+  $('fillText').textContent = `同時套用到其他 ${empties} 個還沒設定的月份`;
   renderPicker();
   $('sheetBg').classList.add('show'); $('sheetBg').setAttribute('aria-hidden', 'false');
 }
 function closeSheet() { $('sheetBg').classList.remove('show'); $('sheetBg').setAttribute('aria-hidden', 'true'); editM = null; }
 function tagOf(code) {
-  const f = FC[code];
-  if (!f) return '無資料';
-  if (f.exclude) return f.exclude;
-  return `報酬 ${pct(f.cagr, true)}・殖利率 ${pct(f.yield)}`;
+  const r = metricsOf(code, method, DB);
+  return r.reason ? r.reason : `報酬 ${pct(r.x, true)}・殖利率 ${pct(r.y)}`;
 }
 function renderPicker() {
   const q = $('search').value.trim().toLowerCase();
-  $('quick').innerHTML = QUICK.filter(c => FC[c]).map(c => `<button type="button" class="qbtn" data-c="${c}" aria-pressed="${draftCode === c}" ${FC[c].exclude ? 'disabled' : ''}>${c}</button>`).join('');
+  $('quick').innerHTML = QUICK.filter(c => FC[c]).map(c => `<button type="button" class="qbtn" data-c="${c}" aria-pressed="${draftCode === c}" ${metricsOf(c, method, DB).reason ? 'disabled' : ''}>${c}</button>`).join('');
   $('quick').querySelectorAll('[data-c]').forEach(b => b.onclick = () => choose(b.dataset.c));
   const box = $('results');
   if (q) {
+    const bad = c => metricsOf(c, method, DB).reason ? 1 : 0;
     const hits = Object.keys(FC).filter(c => c.toLowerCase().includes(q) || (NAMES[c] || '').toLowerCase().includes(q))
-      .sort((a, b) => (!!FC[a].exclude - !!FC[b].exclude) || (a < b ? -1 : 1)).slice(0, 30);
-    box.innerHTML = hits.length ? hits.map(c => `<button type="button" class="res" data-c="${esc(c)}" aria-pressed="${draftCode === c}" ${FC[c].exclude ? 'aria-disabled="true"' : ''}><b>${esc(c)}</b><span>${esc(NAMES[c] || '')}</span><small>${esc(tagOf(c))}</small></button>`).join('')
+      .sort((a, b) => (bad(a) - bad(b)) || (a < b ? -1 : 1)).slice(0, 30);
+    box.innerHTML = hits.length ? hits.map(c => `<button type="button" class="res" data-c="${esc(c)}" aria-pressed="${draftCode === c}" ${bad(c) ? 'aria-disabled="true"' : ''}><b>${esc(c)}</b><span>${esc(NAMES[c] || '')}</span><small>${esc(tagOf(c))}</small></button>`).join('')
       : '<div class="note">找不到符合的 ETF</div>';
     box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => choose(b.dataset.c));
   } else box.innerHTML = '';
-  const f = draftCode ? FC[draftCode] : null;
-  $('chosen').innerHTML = draftCode ? (f && !f.exclude ? `<div class="chosen"><div class="nm"><b>${esc(draftCode)}</b>${esc(NAMES[draftCode] || '')}</div><dl>
-      <dt>年化報酬率</dt><dd>${pct(f.cagr, true)}（${ym(f.cagrFrom)}～${ym(f.cagrTo)}）</dd>
-      <dt>預估殖利率</dt><dd>${pct(f.yield)}（${f.noDiv ? '從未配息' : `${freqOf(f)}，近 ${f.yieldN} 期中位數`}）</dd></dl></div>`
-    : `<div class="chosen" style="border-color:var(--warn)"><div class="nm"><b style="color:var(--warn)">${esc(draftCode)}</b>${esc(NAMES[draftCode] || '')}</div><p class="note" style="margin:4px 0 0">${esc(f ? f.exclude : '查無此標的')}，不列入計算，請改選其他標的。</p></div>`)
+  const r = draftCode ? metricsOf(draftCode, method, DB) : null;
+  $('chosen').innerHTML = draftCode ? (!r.reason ? `<div class="chosen"><div class="nm"><b>${esc(draftCode)}</b>${esc(NAMES[draftCode] || '')}</div><dl>
+      <dt>年化報酬率</dt><dd>${pct(r.x, true)}（${ym(r.xFrom)}～${ym(r.xTo)}）</dd>
+      <dt>預估殖利率</dt><dd>${pct(r.y)}（${r.noDiv ? '從未配息' : `${FREQ[r.perYear] || ''}，${r.years} 年資料`}）</dd></dl></div>`
+    : `<div class="chosen" style="border-color:var(--warn)"><div class="nm"><b style="color:var(--warn)">${esc(draftCode)}</b>${esc(NAMES[draftCode] || '')}</div><p class="note" style="margin:4px 0 0">${esc(r.reason)}，不列入計算，請改選其他標的。</p></div>`)
     : '<p class="note">搜尋或點選常用標的。</p>';
-  $('sheetOk').disabled = !!(draftCode && (!f || f.exclude));
+  $('sheetOk').disabled = !!(r && r.reason);
 }
 function choose(code) {
-  const f = FC[code];
-  if (!f) return;
-  if (f.exclude) { toast(`${code}：${f.exclude}，不提供預估`); return; }
+  if (!FC[code]) return;
+  const r = metricsOf(code, method, DB);
+  if (r.reason) { toast(`${code}：${r.reason}，不提供預估`); return; }
   draftCode = code; $('search').value = ''; renderPicker();
 }
-function amountValue() { const v = parseFloat(String($('amount').value).replace(/[^\d.]/g, '')); return isFinite(v) && v > 0 ? Math.round(v) : 0; }
 $('sheetOk').onclick = () => {
-  const v = amountValue();
-  if (!v) { toast('請輸入每月配置金額'); $('amount').focus(); return; }
-  plan.amount = v;
   if (draftCode) {
     plan.months[editM] = draftCode;
-    if ($('fillEmpty').checked) WIN.forEach(w => { if (!plan.months[w.m]) plan.months[w.m] = draftCode; });
+    if ($('fillEmpty').checked) for (let m = 1; m <= 12; m++) if (!plan.months[m]) plan.months[m] = draftCode;
   } else delete plan.months[editM];
-  savePlan(); closeSheet(); render();
+  save(); closeSheet(); render();
 };
-$('sheetClear').onclick = () => { delete plan.months[editM]; const v = amountValue(); if (v) plan.amount = v; savePlan(); closeSheet(); render(); };
+$('sheetClear').onclick = () => { delete plan.months[editM]; save(); closeSheet(); render(); };
 $('sheetClose').onclick = closeSheet;
 $('sheetBg').addEventListener('click', e => { if (e.target === $('sheetBg')) closeSheet(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && editM) closeSheet(); });
 $('search').addEventListener('input', renderPicker);
-$('amount').addEventListener('blur', () => { const v = amountValue(); if (v) $('amount').value = fmt0(v); });
+
+/* ===== 輸入欄 ===== */
+function bindMoney(id, get, set) {
+  const el = $(id);
+  el.value = fmt0(get());
+  el.addEventListener('input', () => { set(num(el.value)); save(); render(); });
+  el.addEventListener('blur', () => { el.value = fmt0(get()); });
+}
+function initInputs() {
+  bindMoney('amount', () => plan.amount, v => { plan.amount = v; });
+  bindMoney('goalX', () => goal.x, v => { goal.x = v; });
+  bindMoney('stockZ', () => goal.z, v => { goal.z = v; });
+  const inf = $('inflation');
+  inf.value = String(goal.inf);
+  inf.addEventListener('input', () => { goal.inf = Math.min(20, num(inf.value)); save(); render(); });
+  inf.addEventListener('blur', () => { inf.value = String(goal.inf); });
+}
+if (DEMO) {
+  $('demoBar').hidden = false;
+  $('methodSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
+    method = b.dataset.m;
+    $('methodSeg').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    render();
+  });
+  $('swContrib').onclick = () => { includeA = !includeA; $('swContrib').setAttribute('aria-checked', includeA); render(); };
+}
 $('btnShare').onclick = () => {
   const u = new URL(location.href);
-  u.searchParams.delete('embed'); u.searchParams.delete('header');
-  u.searchParams.set('plan', encodePlan(plan)); u.hash = '';
+  ['embed', 'header', 'demo'].forEach(k => u.searchParams.delete(k));
+  u.searchParams.set('plan', encodePlan(plan));
+  u.searchParams.set('x', Math.round(goal.x)); u.searchParams.set('z', Math.round(goal.z)); u.searchParams.set('inf', goal.inf);
+  u.hash = '';
   const link = u.toString();
-  const done = () => toast('已複製分享連結');
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, () => prompt('複製這個連結', link));
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(() => toast('已複製分享連結'), () => prompt('複製這個連結', link));
   else prompt('複製這個連結', link);
 };
-$('btnClear').onclick = () => { if (!Object.keys(plan.months).length) return; plan.months = {}; savePlan(); render(); toast('已清除全部月份'); };
+$('btnClear').onclick = () => { if (!Object.keys(plan.months).length) return; plan.months = {}; save(); render(); toast('已清除全部月份'); };
 $('btnBack').onclick = closeToApp;
 
 /* ===== 資料 ===== */
@@ -487,15 +643,13 @@ function onData(d) {
   if (!d.forecast) throw new Error('資料尚未包含預估值：請先執行新版雪鴞同步程式（sync_lingxi.py）上傳');
   DB = d; FC = d.forecast;
   d.etfs.forEach(e => { NAMES[e.code] = e.name; });
-  WIN = makeWindow(taipeiToday());
-  const src = loadPlan();
-  if (src === 'url') { savePlan(); toast('已載入分享的配置'); }
-  const n = Object.values(FC).filter(f => !f.exclude).length;
-  const ex = Object.values(FC).length - n;
+  const src = load();
+  if (src === 'url') { save(); toast('已載入分享的配置'); }
+  initInputs();
   $('dataLabel').textContent = `資料至 ${String(d.base || '').replace(/-/g, '/')}`;
-  const cnt = {};
-  Object.values(FC).forEach(f => { if (f.exclude) cnt[f.exclude] = (cnt[f.exclude] || 0) + 1; });
-  $('excludeCount').textContent = `目前資料庫共 ${Object.keys(FC).length} 檔 ETF，可預估 ${n} 檔，不予計算 ${ex} 檔（${Object.entries(cnt).map(([k, v]) => `${k} ${v} 檔`).join('、')}）。`;
+  const cnt = {}; let ok = 0;
+  Object.keys(FC).forEach(c => { const r = metricsOf(c, 'm10', d); if (r.reason) cnt[r.reason] = (cnt[r.reason] || 0) + 1; else ok++; });
+  $('excludeCount').textContent = `目前資料庫共 ${Object.keys(FC).length} 檔 ETF，可預估 ${ok} 檔，不予計算 ${Object.keys(FC).length - ok} 檔（${Object.entries(cnt).map(([k, v]) => `${k} ${v} 檔`).join('、')}）。`;
   render();
   hideLoader();
   postToApp({ type: 'ready', title: '領息大地圖', base: d.base });
