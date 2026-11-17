@@ -13,6 +13,7 @@
   --font: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
 button,input{font-family:inherit}
 body{min-height:100vh;display:flex;justify-content:center}
@@ -40,18 +41,10 @@ body{min-height:100vh;display:flex;justify-content:center}
 .kpi .s{font-size:11.5px;color:var(--dim);margin-top:3px}
 .kpi.big{grid-column:1/-1}
 .kpi.big .v{font-size:30px;color:var(--gold)}
-.cover{grid-column:1/-1;border-top:1px dashed var(--line2);padding-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.cover label{font-size:12.5px;color:var(--muted)}
-.cover input{width:110px;height:34px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);padding:0 10px;font-size:16px;font-variant-numeric:tabular-nums}
-.cover .res{font-size:13px;color:var(--ink2)}
-.cover .res b{color:var(--green);font-size:15px}
-.cover .res b.low{color:var(--gold)}
 .ph h2{margin:0;font-size:20px;font-weight:800;letter-spacing:.5px}
 .ph p{margin:6px 0 14px;font-size:12.5px;color:var(--muted)}
 .demo{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:-6px 0 12px;padding:8px 10px;border:1px dashed var(--line2);border-radius:12px;font-size:12px;color:var(--muted)}
 .kpi .v.pr{color:var(--green)}
-.legend{display:flex;gap:12px;font-size:11.5px;color:var(--muted);margin:-6px 0 12px;flex-wrap:wrap}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .ydiv{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin:8px 0 2px 2px;padding-top:8px;border-top:1px dashed var(--line)}
 .ydiv:first-child{margin-top:0;padding-top:0;border-top:0}
 .mrow{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;padding:9px 2px}
@@ -66,7 +59,6 @@ body{min-height:100vh;display:flex;justify-content:center}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:2px;flex:none}
 .seg button{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:600;padding:5px 9px;border-radius:8px;cursor:pointer}
 .seg button.on{background:var(--bar);color:#04121F}
-.exp{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed rgba(245,197,66,.75)}
 .amt{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;min-width:96px}
 .amt.dash{color:var(--dim);font-weight:600}
 .note{font-size:11.5px;color:var(--dim);line-height:1.7;margin:14px 4px 0}
@@ -112,18 +104,15 @@ body{min-height:100vh;display:flex;justify-content:center}
       <div class="t">庫存 <b id="hcount">0</b> 檔</div>
       <div class="chips" id="chips"></div>
     </div>
-    <div class="card"><div class="kpis" id="kpis"></div></div>
     <div class="card">
       <div class="ph">
         <div class="phh"><h2>預估12個月現金流</h2></div>
         <p id="range"></p>
         <div class="demo" id="demoBar" hidden><span>預估算法（DEMO）</span><div class="seg" id="mseg"><button type="button" data-m="amt">歷年配息平均</button><button type="button" data-m="amt10">近10年平均</button><button type="button" data-m="yld">歷年殖利率平均</button></div></div>
       </div>
-      <div class="legend" id="legend" hidden>
-        <span id="lgExp" hidden><i style="background:transparent;border-left:2px dashed var(--gold);border-radius:0;width:2px"></i>每月開銷</span>
-      </div>
       <div id="months"></div>
     </div>
+    <div class="card"><div class="kpis" id="kpis"></div></div>
     <p class="note" id="note"></p>
   </div>
   </div>
@@ -156,7 +145,7 @@ const STOCK_URL = 'https://script.google.com/macros/s/AKfycbyLWNvrA-aBZscUEcS48o
 const ETF_URL = 'https://script.google.com/macros/s/AKfycbxj5wW6Ve2zNvp0SJS3zluGE_yd7WyNWP6HrPHGVwZDblQR0JSQPA9MPoZ9IDDvXd4F/exec';
 let DATA = null;
 const SAMPLE = [['0056', 10000], ['00878', 10000], ['00919', 10000], ['2330', 1000], ['2412', 3000], ['2884', 20000]];
-const KEY_H = 'divflow_holdings_v1', KEY_X = 'divflow_expense_v1', KEY_E = 'divflow_showest_v1', KEY_M = 'divflow_method_v1';
+const KEY_H = 'divflow_holdings_v1', KEY_M = 'divflow_method_v1';
 /* PR 分布表（APP 後端每天產出：{n:用戶數, p:[第1～99百分位的預估年領息], date}）。網址由 RD 提供後填入；空白＝不顯示 PR（?demo=1 時用示意分布） */
 const PR_URL = '';
 const PR_MIN_USERS = 100;
@@ -209,7 +198,6 @@ let holdings = (() => {
   if (h.length) { fromLink = true; store.set(KEY_H, h); return h; }
   return store.get(KEY_H, null) || SAMPLE.slice();
 })();
-let expense = store.get(KEY_X, 0);
 const DEMO = QS.get('demo') === '1';     // ?demo=1：顯示「預估算法」切換、PR 用示意分布
 /* 預估算法：amt＝歷年每股配息平均÷一年次數（預設，保守）；yld＝歷年平均殖利率×最新收盤÷一年次數；amt10＝近 10 年每股配息平均÷一年次數 */
 let METHOD = /^(amt|yld|amt10)$/.test(QS.get('est') || '') ? QS.get('est') : (DEMO ? store.get(KEY_M, 'amt') : 'amt');
@@ -303,19 +291,12 @@ function render() {
   const total = paid + pend + est, avg = total / 12;
   postToApp({ type: 'summary', total: Math.round(total), monthly: Math.round(avg), method: METHOD });
   const rangeTxt = '未來一年 1～12 月';
-  const cov = expense > 0
-    ? `平均每月可 cover <b class="${avg < expense ? 'low' : ''}">${(avg / expense * 100).toFixed(0)}%</b>`
-    : '輸入每月開銷，看股息能 cover 幾成';
   $('kpis').innerHTML = `
     <div class="kpi big"><div class="l">預估一年可領股息</div><div class="v">NT$${fmt(total)}</div><div class="s">${rangeTxt}・依發放月份${SIM ? `・模擬 ${SIM}` : ''}</div></div>
     <div class="kpi"><div class="l">平均每月</div><div class="v">NT$${fmt(avg)}</div><div class="s">一年合計 ÷ 12</div></div>
-    ${prKpi(total)}
-    <div class="cover"><label for="exp">每月開銷</label><input id="exp" inputmode="numeric" placeholder="例：30000" value="${expense ? fmt(expense) : ''}"><span class="res">${cov}</span></div>`;
-  $('exp').onchange = e => { expense = +String(e.target.value).replace(/[^\d.]/g, '') || 0; store.set(KEY_X, expense); render(); };
+    ${prKpi(total)}`;
   $('range').textContent = `${rangeTxt}，每月為庫存合計的預估股息。`;
-  const max = Math.max(1, ...months.map(m => m.paid + m.pend + m.est), expense || 0);
-  $('lgExp').hidden = !(expense > 0);
-  $('legend').hidden = !(expense > 0);
+  const max = Math.max(1, ...months.map(m => m.paid + m.pend + m.est));
   $('demoBar').hidden = !DEMO;
   document.querySelectorAll('#mseg button').forEach(b => { b.classList.toggle('on', b.dataset.m === METHOD); b.onclick = () => { METHOD = b.dataset.m; store.set(KEY_M, METHOD); render(); }; });
   if (!holdings.length) {
@@ -323,12 +304,11 @@ function render() {
   } else {
     $('months').innerHTML = months.map((m, i) => {
       const w = WIN[i], tot = m.paid + m.pend + m.est;
-      const exp = expense > 0 ? `<div class="exp" style="left:${(expense / max * 100).toFixed(2)}%"></div>` : '';
       const yd = '';
       return `${yd}
       <div class="mrow">
         <div class="m">${w.m} 月</div>
-        <div class="track"><div class="fill" style="width:${(tot / max * 100).toFixed(2)}%"><div class="paid" style="flex:1"></div></div>${exp}</div>
+        <div class="track"><div class="fill" style="width:${(tot / max * 100).toFixed(2)}%"><div class="paid" style="flex:1"></div></div></div>
         <div class="amt ${tot ? '' : 'dash'}">${tot ? 'NT$' + fmt(tot) : '—'}</div>
       </div>`;
     }).join('');
