@@ -48,6 +48,8 @@ body{min-height:100vh;display:flex;justify-content:center}
 .cover .res b.low{color:var(--gold)}
 .ph h2{margin:0;font-size:20px;font-weight:800;letter-spacing:.5px}
 .ph p{margin:6px 0 14px;font-size:12.5px;color:var(--muted)}
+.demo{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:-6px 0 12px;padding:8px 10px;border:1px dashed var(--line2);border-radius:12px;font-size:12px;color:var(--muted)}
+.kpi .v.pr{color:var(--green)}
 .legend{display:flex;gap:12px;font-size:11.5px;color:var(--muted);margin:-6px 0 12px;flex-wrap:wrap}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .ydiv{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin:8px 0 2px 2px;padding-top:8px;border-top:1px dashed var(--line)}
@@ -113,14 +115,11 @@ body{min-height:100vh;display:flex;justify-content:center}
     <div class="card"><div class="kpis" id="kpis"></div></div>
     <div class="card">
       <div class="ph">
-        <div class="phh"><h2>未來 12 個月現金流</h2>
-          <div class="seg" id="seg"><button type="button" data-v="1">含預估</button><button type="button" data-v="0">只看公告</button></div></div>
-        <p id="range">以發放日入帳計算。</p>
+        <div class="phh"><h2>預估12個月現金流</h2></div>
+        <p id="range"></p>
+        <div class="demo" id="demoBar" hidden><span>預估算法（DEMO）</span><div class="seg" id="mseg"><button type="button" data-m="amt">歷年配息平均</button><button type="button" data-m="amt10">近10年平均</button><button type="button" data-m="yld">歷年殖利率平均</button></div></div>
       </div>
-      <div class="legend">
-        <span><i style="background:var(--bar)"></i>已入帳</span>
-        <span><i style="background:repeating-linear-gradient(-45deg,var(--bar2) 0 3px,#2B6A9C 3px 6px)"></i>已公告・待發放</span>
-        <span id="lgEst"><i style="background:rgba(110,195,255,.16);box-shadow:inset 0 0 0 1px rgba(110,195,255,.6)"></i>預估</span>
+      <div class="legend" id="legend" hidden>
         <span id="lgExp" hidden><i style="background:transparent;border-left:2px dashed var(--gold);border-radius:0;width:2px"></i>每月開銷</span>
       </div>
       <div id="months"></div>
@@ -157,7 +156,10 @@ const STOCK_URL = 'https://script.google.com/macros/s/AKfycbyLWNvrA-aBZscUEcS48o
 const ETF_URL = 'https://script.google.com/macros/s/AKfycbxj5wW6Ve2zNvp0SJS3zluGE_yd7WyNWP6HrPHGVwZDblQR0JSQPA9MPoZ9IDDvXd4F/exec';
 let DATA = null;
 const SAMPLE = [['0056', 10000], ['00878', 10000], ['00919', 10000], ['2330', 1000], ['2412', 3000], ['2884', 20000]];
-const KEY_H = 'divflow_holdings_v1', KEY_X = 'divflow_expense_v1', KEY_E = 'divflow_showest_v1';
+const KEY_H = 'divflow_holdings_v1', KEY_X = 'divflow_expense_v1', KEY_E = 'divflow_showest_v1', KEY_M = 'divflow_method_v1';
+/* PR 分布表（APP 後端每天產出：{n:用戶數, p:[第1～99百分位的預估年領息], date}）。網址由 RD 提供後填入；空白＝不顯示 PR（?demo=1 時用示意分布） */
+const PR_URL = '';
+const PR_MIN_USERS = 100;
 const NHI_RATE = 0.0211, NHI_MIN = 20000;            // 二代健保補充保費（現制：單筆達 2 萬元扣 2.11%）
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('en-US');
@@ -179,10 +181,9 @@ const dayDiff = (a, b) => Math.round((new Date(a + 'T00:00:00Z') - new Date(b + 
 const weekday = d => { let t = d; for (let i = 0; i < 3; i++) { const w = new Date(t + 'T00:00:00Z').getUTCDay(); if (w === 0 || w === 6) t = addDays(t, 1); else break; } return t; };
 
 /* ===== 滾動 12 個月：本月 → 11 個月後 ===== */
-const START = TODAY.slice(0, 7) + '-01';
-const WIN = Array.from({ length: 12 }, (_, i) => { const d = addMonths(START, i); return { y: +d.slice(0, 4), m: +d.slice(5, 7) }; });
-const WIN_END = new Date(Date.UTC(WIN[11].y, WIN[11].m, 0)).toISOString().slice(0, 10);
-const mIdx = d => { if (!d) return -1; const i = (+d.slice(0, 4) - WIN[0].y) * 12 + (+d.slice(5, 7) - WIN[0].m); return i >= 0 && i < 12 ? i : -1; };
+/* 一年 12 個月（1～12 月）：每檔配息依「發放月份」歸月，代表未來一年的配息月曆 */
+const WIN = Array.from({ length: 12 }, (_, i) => ({ m: i + 1 }));
+const mIdx = d => { if (!d) return -1; const m = +d.slice(5, 7); return m >= 1 && m <= 12 ? m - 1 : -1; };
 
 function lots(sh) {
   const z = Math.floor(sh / 1000), r = sh % 1000;
@@ -209,7 +210,11 @@ let holdings = (() => {
   return store.get(KEY_H, null) || SAMPLE.slice();
 })();
 let expense = store.get(KEY_X, 0);
-let showEst = store.get(KEY_E, true);   // 預設含預估
+const DEMO = QS.get('demo') === '1';     // ?demo=1：顯示「預估算法」切換、PR 用示意分布
+/* 預估算法：amt＝歷年每股配息平均÷一年次數（預設，保守）；yld＝歷年平均殖利率×最新收盤÷一年次數；amt10＝近 10 年每股配息平均÷一年次數 */
+let METHOD = /^(amt|yld|amt10)$/.test(QS.get('est') || '') ? QS.get('est') : (DEMO ? store.get(KEY_M, 'amt') : 'amt');
+const EST = {};                          // 代號 → {n, amt, yld, years, amt10}（同步程式事先算好）
+let PRDIST = null;
 const actualByCode = {};                // 今年＋去年的正式配息（含已公告未發放）
 
 function shareURL() {
@@ -226,52 +231,58 @@ function syncURL() {   // 網址列跟著目前庫存，方便加入書籤
   } catch (e) {}
 }
 
-/* 模擬模式：除息日超過模擬日 30 天以上的，視為當時尚未公告 */
-const announced = e => !SIM || e.ex <= addDays(SIM, 30);
-
-/* ===== 預估（尚未公告的配息）=====
-   ETF：最近一次配息金額 × 配息頻率往後排
-   個股：去年同期（每一筆正式配息往後平移 12 個月；與正式公告相差 60 天內視為同一期） */
-function estimatesFor(code, known) {
-  const out = [];
-  const isETF = (DATA.sec[code] || [])[1] === 'ETF';
-  const base = known.filter(e => e.cash > 0).sort((a, b) => a.ex < b.ex ? -1 : 1);
-  if (isETF && base.length >= 2) {
-    const last = base[base.length - 1];
-    const gaps = [];
-    for (let i = 1; i < base.length; i++) gaps.push(dayDiff(base[i].ex, base[i - 1].ex));
-    gaps.sort((a, b) => a - b);
-    const g = gaps[Math.floor(gaps.length / 2)];
-    const step = g < 50 ? 1 : g < 130 ? 3 : g < 250 ? 6 : 12;
-    const lag = last.pay ? Math.max(7, dayDiff(last.pay, last.ex)) : 25;
-    for (let k = 1; k <= 30; k++) {
-      const ex = weekday(addMonths(last.ex, step * k));
-      if (ex > WIN_END) break;
-      const pay = weekday(addDays(ex, lag));
-      if (mIdx(pay) < 0 || addDays(ex, 30) < TODAY) continue;   // 不在期間內，或早該公告卻沒公告
-      out.push({ code, ex, pay, cash: last.cash, estimate: true, basis: `參考最近一次 ${ymd(last.ex)} 除息，每單位 ${+last.cash.toFixed(4)}` });
-    }
-    return out;
+/* ===== 預估（本頁全部是預估值，不使用已公告資料）=====
+   時間：以最近 n 次「已除息」的配息（n＝一年配息次數）當範本，發放日（本身或往後平移 12 的倍數個月）落在本月起 12 個月內的就排入
+   金額：每期＝同步程式事先算好的歷史平均（金額法 amt／殖利率法 yld）；沒有歷史值的，用近一年各期平均 */
+function estimatesFor(code) {
+  const hist = (actualByCode[code] || []).filter(e => e.cash > 0 && e.ex <= TODAY).sort((a, b) => a.ex < b.ex ? -1 : 1);
+  if (!hist.length) return [];
+  const E = EST[code];
+  const last365 = hist.filter(e => e.ex > addDays(TODAY, -365));
+  const n = Math.max(1, Math.min(12, (E && E.n) || last365.length || 1));
+  let per = E ? (METHOD === 'yld' && E.yld > 0 ? E.yld : METHOD === 'amt10' && E.amt10 > 0 ? E.amt10 : E.amt) : 0;
+  if (!(per > 0)) {
+    const b = last365.length ? last365 : hist.slice(-n);
+    per = b.reduce((t, e) => t + e.cash, 0) / b.length;
   }
-  const used = new Set();
-  base.forEach(p => {
-    const ex = weekday(addMonths(p.ex, 12));
-    let best = -1, bd = 61;
-    known.forEach((c, i) => { const d = Math.abs(dayDiff(c.ex, ex)); if (!used.has(i) && d < bd) { bd = d; best = i; } });
-    if (best >= 0) { used.add(best); return; }                    // 同期已公告 → 以正式為準
-    const pay = p.pay ? weekday(addMonths(p.pay, 12)) : weekday(addDays(ex, 30));
-    if (mIdx(pay) < 0 || addDays(ex, 30) < TODAY) return;          // 不在期間內，或已過期仍未公告（可能停發）
-    out.push({ code, ex, pay, cash: p.cash, estimate: true, basis: `參考去年 ${ymd(p.pay || p.ex)} 發放，每股 ${+p.cash.toFixed(4)}` });
-  });
-  return out;
+  return hist.slice(-n).map(p => ({ code, ex: p.ex, pay: p.pay || weekday(addDays(p.ex, 30)), cash: per, estimate: true }));
+}
+/* ---------- PR 值 ---------- */
+function normInv(q) {                     // 標準常態反函數（Acklam 近似），示意分布用
+  const a = [-39.6968302866538, 220.946098424521, -275.928510446969, 138.357751867269, -30.6647980661472, 2.50662827745924],
+    b = [-54.4760987982241, 161.585836858041, -155.698979859887, 66.8013118877197, -13.2806815528857],
+    c = [-0.00778489400243029, -0.322396458041136, -2.40075827716184, -2.54973253934373, 4.37466414146497, 2.93816398269878],
+    d = [0.00778469570904146, 0.32246712907004, 2.445134137143, 3.75440866190742];
+  const pl = 0.02425;
+  if (q < pl) { const t = Math.sqrt(-2 * Math.log(q)); return (((((c[0] * t + c[1]) * t + c[2]) * t + c[3]) * t + c[4]) * t + c[5]) / ((((d[0] * t + d[1]) * t + d[2]) * t + d[3]) * t + 1); }
+  if (q > 1 - pl) return -normInv(1 - q);
+  const t = q - 0.5, r = t * t;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * t / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+function demoDist() {                     // 示意：年領息中位數 6 萬、對數常態
+  return { demo: true, n: 1000, p: Array.from({ length: 99 }, (_, i) => Math.round(60000 * Math.exp(1.1 * normInv((i + 1) / 100)))) };
+}
+function prOf(total) {
+  if (!PRDIST || !(PRDIST.n >= PR_MIN_USERS) || !Array.isArray(PRDIST.p) || PRDIST.p.length < 99 || !(total > 0)) return null;
+  const k = PRDIST.p.filter(v => v < total).length;      // 有幾個百分位點比你低
+  return Math.max(1, Math.min(99, k));
+}
+function prKpi(total) {
+  const pr = prOf(total);
+  if (pr == null) return '';
+  return `<div class="kpi"><div class="l">領息 PR 值${PRDIST.demo ? '（示意）' : ''}</div><div class="v pr">PR ${pr}</div><div class="s">贏過 ${pr}% 的用戶</div></div>`;
+}
+function loadPR() {
+  if (PR_URL) {
+    return fetch(PR_URL, { cache: 'no-store' }).then(r => r.json()).then(j => { if (j && Array.isArray(j.p)) PRDIST = j; }).catch(() => {});
+  }
+  if (DEMO) PRDIST = demoDist();
+  return Promise.resolve();
 }
 function compute() {
   const months = Array.from({ length: 12 }, () => ({ paid: 0, pend: 0, est: 0, items: [] }));
   holdings.forEach(([code, sh]) => {
-    const known = (actualByCode[code] || []).filter(announced);
-    const list = known.map(e => e.pay ? e : { ...e, pay: weekday(addDays(e.ex, 30)), inferred: true });
-    if (showEst) estimatesFor(code, known).forEach(e => list.push(e));
-    list.forEach(e => {
+    estimatesFor(code).forEach(e => {
       if (!(e.cash > 0)) return;                                   // 只算現金股利，配股不計
       const m = mIdx(e.pay);
       if (m < 0) return;
@@ -290,38 +301,39 @@ function render() {
   const months = compute();
   const paid = months.reduce((s, m) => s + m.paid, 0), pend = months.reduce((s, m) => s + m.pend, 0), est = months.reduce((s, m) => s + m.est, 0);
   const total = paid + pend + est, avg = total / 12;
-  const rangeTxt = `${WIN[0].y}/${WIN[0].m}～${WIN[11].y}/${WIN[11].m}`;
+  postToApp({ type: 'summary', total: Math.round(total), monthly: Math.round(avg), method: METHOD });
+  const rangeTxt = '未來一年 1～12 月';
   const cov = expense > 0
     ? `平均每月可 cover <b class="${avg < expense ? 'low' : ''}">${(avg / expense * 100).toFixed(0)}%</b>`
     : '輸入每月開銷，看股息能 cover 幾成';
   $('kpis').innerHTML = `
-    <div class="kpi big"><div class="l">未來 12 個月預計領息</div><div class="v">NT$${fmt(total)}</div><div class="s">${rangeTxt}・以發放日計${SIM ? `・模擬 ${SIM}` : ''}</div></div>
-    <div class="kpi"><div class="l">平均每月</div><div class="v">NT$${fmt(avg)}</div><div class="s">12 個月合計 ÷ 12</div></div>
-    <div class="kpi"><div class="l">已公告</div><div class="v">NT$${fmt(paid + pend)}</div><div class="s">${showEst ? `另有預估 ${fmt(est)}` : '不含預估'}${paid ? `・本月已入帳 ${fmt(paid)}` : ''}</div></div>
+    <div class="kpi big"><div class="l">預估一年可領股息</div><div class="v">NT$${fmt(total)}</div><div class="s">${rangeTxt}・依發放月份${SIM ? `・模擬 ${SIM}` : ''}</div></div>
+    <div class="kpi"><div class="l">平均每月</div><div class="v">NT$${fmt(avg)}</div><div class="s">一年合計 ÷ 12</div></div>
+    ${prKpi(total)}
     <div class="cover"><label for="exp">每月開銷</label><input id="exp" inputmode="numeric" placeholder="例：30000" value="${expense ? fmt(expense) : ''}"><span class="res">${cov}</span></div>`;
   $('exp').onchange = e => { expense = +String(e.target.value).replace(/[^\d.]/g, '') || 0; store.set(KEY_X, expense); render(); };
-  $('range').textContent = `${rangeTxt}，以發放日入帳計算，每月為庫存合計。`;
+  $('range').textContent = `${rangeTxt}，每月為庫存合計的預估股息。`;
   const max = Math.max(1, ...months.map(m => m.paid + m.pend + m.est), expense || 0);
   $('lgExp').hidden = !(expense > 0);
-  $('lgEst').hidden = !showEst;
-  document.querySelectorAll('#seg button').forEach(b => { b.classList.toggle('on', (b.dataset.v === '1') === showEst); b.onclick = () => { showEst = b.dataset.v === '1'; store.set(KEY_E, showEst); render(); }; });
+  $('legend').hidden = !(expense > 0);
+  $('demoBar').hidden = !DEMO;
+  document.querySelectorAll('#mseg button').forEach(b => { b.classList.toggle('on', b.dataset.m === METHOD); b.onclick = () => { METHOD = b.dataset.m; store.set(KEY_M, METHOD); render(); }; });
   if (!holdings.length) {
     $('months').innerHTML = `<div class="emptyhint">還沒有庫存<br>點右上角「編輯庫存」輸入持股</div>`;
   } else {
     $('months').innerHTML = months.map((m, i) => {
       const w = WIN[i], tot = m.paid + m.pend + m.est;
       const exp = expense > 0 ? `<div class="exp" style="left:${(expense / max * 100).toFixed(2)}%"></div>` : '';
-      const yd = (i === 0 || w.m === 1) ? `<div class="ydiv">${w.y} 年</div>` : '';
+      const yd = '';
       return `${yd}
-      <div class="mrow ${i === 0 ? 'cur' : ''}">
+      <div class="mrow">
         <div class="m">${w.m} 月</div>
-        <div class="track"><div class="fill" style="width:${(tot / max * 100).toFixed(2)}%"><div class="paid" style="flex:${m.paid}"></div><div class="pend" style="flex:${m.pend}"></div><div class="est" style="flex:${m.est}"></div></div>${exp}</div>
+        <div class="track"><div class="fill" style="width:${(tot / max * 100).toFixed(2)}%"><div class="paid" style="flex:1"></div></div>${exp}</div>
         <div class="amt ${tot ? '' : 'dash'}">${tot ? 'NT$' + fmt(tot) : '—'}</div>
       </div>`;
     }).join('');
   }
-  $('note').innerHTML = `<b>計算方式</b>：以目前庫存股數計算，期間為本月起滾動 12 個月（${rangeTxt}）；每筆股息 = 股數 × 每股現金股利，於「股息發放日」入帳，只要發放日落在期間內就計入（不考慮買進時間），不再投入。只計現金股利，<b>配股不計</b>。尚未公布發放日的，以除息日後約 30 天推估；部分月配 ETF 的發放日或金額依過去規律推估。
-  <br><b>預估</b>：尚未公告的配息，個股依去年同期、ETF 依最近一次配息金額與配息頻率往後推算；去年同期已過一個月仍未公告的視為停發。實際以公司公告為準。
+  $('note').innerHTML = `<b>說明</b>：本頁金額皆為預估值，依目前庫存股數與各股配息紀錄推算未來一年可領的現金股利，依預計發放月份排入 1～12 月，僅供參考，實際以公司公告為準。配股不計。${PRDIST ? '<br><b>PR 值</b>：以預估未來一年股息，和其他用戶比較的排名' + (PRDIST.demo ? '（目前為示意資料）' : `（${fmt(PRDIST.n)} 位用戶，${PRDIST.date || ''}）`) + '。' : ''}
   <br><b>實際入帳會再少一些</b>：畫面金額為股利總額，未扣除以下費用。①二代健保補充保費：單筆股利達 NT$${fmt(NHI_MIN)} 元，由發放單位直接扣 ${(NHI_RATE * 100).toFixed(2)}%（例：單筆 3 萬元扣 ${fmt(30000 * NHI_RATE)} 元；單筆上限 1,000 萬元；年度結算新制已暫緩，若有變動以健保署公告為準）。ETF 只有收益分配中的股利所得部分要扣。②匯費：每筆約 10 元，依各公司規定。③股利所得稅：隔年 5 月報稅時，可選「合併計稅」（股利 8.5% 可抵減稅額，每戶上限 8 萬元）或「分開計稅」（28% 單一稅率），依個人稅率而定，入帳時不會先扣。
   <br>資料：雪鴞 API，資料日 ${DATA.updated ? ymd(DATA.updated) : '—'}。依歷史資料試算，不代表未來配息，不構成投資建議。${SIM ? `<br>目前為模擬模式：站在 ${SIM} 看畫面。` : ''}`;
 }
@@ -422,13 +434,14 @@ function addActual(code, e) {
 }
 function boot() {
   const PREV = String(+YEAR - 1);
-  Promise.allSettled([getJSON(STOCK_URL, '個股'), getJSON(ETF_URL, 'ETF'), getJSON(STOCK_URL, '個股（前一年）', PREV)]).then(([st, et, sp]) => {
+  Promise.allSettled([getJSON(STOCK_URL, '個股'), getJSON(ETF_URL, 'ETF'), getJSON(STOCK_URL, '個股（前一年）', PREV), loadPR()]).then(([st, et, sp]) => {
     const sec = {}, warn = [];
     let updated = '', n = 0;
     const mkOf = v => c => ((v && v.mk) || {})[c] === '上櫃' ? '上櫃' : '上市';
     const stockEv = (v, label) => {
       const mk = mkOf(v);
       Object.entries(v.sec || {}).forEach(([c, nm]) => { if (!sec[c]) sec[c] = [nm, mk(c)]; });
+      Object.entries(v.est || {}).forEach(([c, e]) => { if (!EST[c] && e && e[0] > 0) EST[c] = { n: +e[0], amt: +e[1], yld: e[2] == null ? null : +e[2], years: +e[3], amt10: e[4] == null ? null : +e[4] }; });
       (v.ev || []).forEach(e => { addActual(e[0], { code: e[0], ex: e[1], pay: e[2] || '', cash: +e[3] || 0, est: !!e[5] }); n++; });
     };
     if (st.status === 'fulfilled' && st.value && st.value.ok) { stockEv(st.value); updated = st.value.updated || ''; }
@@ -437,6 +450,7 @@ function boot() {
     if (et.status === 'fulfilled' && et.value && et.value.etfs) {
       const d = et.value;
       d.etfs.forEach(x => { sec[x.code] = [x.name, 'ETF']; });
+      Object.entries(d.est || {}).forEach(([c, e]) => { if (e && e[0] > 0) EST[c] = { n: +e[0], amt: +e[1], yld: e[2] == null ? null : +e[2], years: +e[3], amt10: e[4] == null ? null : +e[4] }; });
       [d.events, d.prevEvents].forEach(group => Object.entries(group || {}).forEach(([c, list]) => list.forEach(x => {
         if (x.ex) { addActual(c, { code: c, ex: x.ex, pay: x.pay || '', cash: +x.dps || 0, est: !!(x.estPay || x.estDps) }); n++; }
       })));
