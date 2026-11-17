@@ -262,9 +262,9 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 預估殖利率 <em>N</em> = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
 （每月金額相同，等於有設定月份的平均；同一檔選幾個月就占幾份）</div>
     <div class="tbl-wrap"><table class="doc"><thead><tr><th>算法</th><th>年化報酬率</th><th>預估殖利率</th></tr></thead><tbody>
-      <tr><td>近 10 年平均（預設）</td><td>近 10 年還原股價年化；上市未滿 10 年用上市至今</td><td>近 10 年平均每年配息 ÷ 最新收盤價</td></tr>
-      <tr><td>歷年配息平均</td><td>上市至今還原股價年化</td><td>歷年平均每年配息 ÷ 最新收盤價</td></tr>
-      <tr><td>歷年殖利率平均</td><td>上市至今還原股價年化</td><td>歷年「每年殖利率」的平均</td></tr>
+      <tr><td>近 10 年平均（預設）</td><td>上市至今還原股價年化（算到最近一個交易日）</td><td>近 10 年平均每年配息 ÷ 最近一個交易日收盤價</td></tr>
+      <tr><td>歷年配息平均</td><td>上市至今還原股價年化（算到最近一個交易日）</td><td>歷年平均每年配息 ÷ 最近一個交易日收盤價</td></tr>
+      <tr><td>歷年殖利率平均</td><td>上市至今還原股價年化（算到最近一個交易日）</td><td>歷年「每年殖利率」的平均</td></tr>
     </tbody></table></div>
     <ul>
       <li>還原股價已把配息加回去，所以預估報酬率已包含配息，與預估殖利率不能相加。</li>
@@ -353,8 +353,7 @@ function metricsOf(code, method, d) {
   if (!f) return { reason: '查無此標的' };
   if (f.exclude && HARD_EXCLUDE.includes(f.exclude)) return { reason: f.exclude };
   if (f.cagr == null) return { reason: '缺少還原價資料' };
-  const x = method === 'm10' ? (f.cagr10 != null ? f.cagr10 : f.cagr) : f.cagr;
-  const xFrom = method === 'm10' ? (f.cagr10From || f.cagrFrom) : f.cagrFrom;
+  const x = f.cagr, xFrom = f.cagrFrom;                 // 年化報酬率：三種算法都用上市至今（算到最近一個交易日）
   const e = (d.est || {})[code], pn = ((d.prices || {})[code] || {}).pn;
   let y;
   if (e && pn > 0) {
@@ -431,7 +430,7 @@ function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2400); }
 function fmt0(x) { return Math.round(x).toLocaleString('en-US'); }
 const pct = (x, sign) => x == null ? '—' : (sign && x >= 0 ? '+' : '') + (x * 100).toFixed(2) + '%';
-const ym = s => s ? s.replace('-', '/') : '';
+const ym = s => s ? s.replace(/-/g, '/') : '';
 const FREQ = { 12: '月配', 6: '雙月配', 4: '季配', 2: '半年配', 1: '年配' };
 function num(v) { const x = parseFloat(String(v).replace(/[^\d.]/g, '')); return isFinite(x) ? x : 0; }
 function taipeiToday() {
