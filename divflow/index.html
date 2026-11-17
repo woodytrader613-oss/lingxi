@@ -52,8 +52,7 @@ body{min-height:100vh;display:flex;justify-content:center}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .ydiv{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin:8px 0 2px 2px;padding-top:8px;border-top:1px dashed var(--line)}
 .ydiv:first-child{margin-top:0;padding-top:0;border-top:0}
-.mrow{display:grid;grid-template-columns:38px 1fr auto 18px;align-items:center;gap:10px;padding:9px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
-.mrow.empty{cursor:default}
+.mrow{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;padding:9px 2px}
 .mrow .m{font-size:14px;color:var(--ink2);text-align:right}
 .mrow.cur .m{color:var(--gold);font-weight:700}
 .track{position:relative;height:9px;border-radius:5px;background:var(--track)}
@@ -68,22 +67,6 @@ body{min-height:100vh;display:flex;justify-content:center}
 .exp{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed rgba(245,197,66,.75)}
 .amt{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;min-width:96px}
 .amt.dash{color:var(--dim);font-weight:600}
-.chev{width:9px;height:9px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);justify-self:center;transition:transform .2s}
-.mrow.open .chev{transform:rotate(-135deg) translate(-2px,-2px)}
-.mrow.empty .chev{display:none}
-.detail{display:none;margin:2px 0 10px 48px;flex-direction:column;gap:8px}
-.detail.open{display:flex}
-.ev{background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 10px}
-.ev.estc{background:transparent;border-style:dashed}
-.ev .c{font-size:15px;font-weight:800;letter-spacing:.3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.tag{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:6px}
-.tag.paid{color:var(--gold);background:rgba(245,197,66,.12)}
-.tag.pend{color:var(--bar);background:rgba(110,195,255,.12)}
-.tag.est{color:var(--muted);background:rgba(141,155,178,.14);font-weight:600}
-.ev .n{font-size:13px;color:var(--ink2)}
-.ev .a{grid-row:1/3;grid-column:2;align-self:center;font-size:16.5px;font-weight:800;font-variant-numeric:tabular-nums}
-.ev .f{grid-column:1/-1;font-size:12px;color:var(--muted)}
-.msum{font-size:12px;color:var(--muted);text-align:right;padding:0 4px}
 .note{font-size:11.5px;color:var(--dim);line-height:1.7;margin:14px 4px 0}
 .note b{color:var(--muted)}
 .emptyhint{text-align:center;padding:30px 10px;color:var(--muted);font-size:14px;line-height:1.8}
@@ -132,7 +115,7 @@ body{min-height:100vh;display:flex;justify-content:center}
       <div class="ph">
         <div class="phh"><h2>未來 12 個月現金流</h2>
           <div class="seg" id="seg"><button type="button" data-v="1">含預估</button><button type="button" data-v="0">只看公告</button></div></div>
-        <p id="range">以發放日入帳計算。點有金額的月份，可以看是哪幾檔入帳。</p>
+        <p id="range">以發放日入帳計算。</p>
       </div>
       <div class="legend">
         <span><i style="background:var(--bar)"></i>已入帳</span>
@@ -228,7 +211,6 @@ let holdings = (() => {
 let expense = store.get(KEY_X, 0);
 let showEst = store.get(KEY_E, true);   // 預設含預估
 const actualByCode = {};                // 今年＋去年的正式配息（含已公告未發放）
-const openMonths = new Set();
 
 function shareURL() {
   const q = new URLSearchParams();
@@ -318,7 +300,7 @@ function render() {
     <div class="kpi"><div class="l">已公告</div><div class="v">NT$${fmt(paid + pend)}</div><div class="s">${showEst ? `另有預估 ${fmt(est)}` : '不含預估'}${paid ? `・本月已入帳 ${fmt(paid)}` : ''}</div></div>
     <div class="cover"><label for="exp">每月開銷</label><input id="exp" inputmode="numeric" placeholder="例：30000" value="${expense ? fmt(expense) : ''}"><span class="res">${cov}</span></div>`;
   $('exp').onchange = e => { expense = +String(e.target.value).replace(/[^\d.]/g, '') || 0; store.set(KEY_X, expense); render(); };
-  $('range').textContent = `${rangeTxt}，以發放日入帳計算。點有金額的月份，可以看是哪幾檔入帳。`;
+  $('range').textContent = `${rangeTxt}，以發放日入帳計算，每月為庫存合計。`;
   const max = Math.max(1, ...months.map(m => m.paid + m.pend + m.est), expense || 0);
   $('lgExp').hidden = !(expense > 0);
   $('lgEst').hidden = !showEst;
@@ -327,43 +309,21 @@ function render() {
     $('months').innerHTML = `<div class="emptyhint">還沒有庫存<br>點右上角「編輯庫存」輸入持股</div>`;
   } else {
     $('months').innerHTML = months.map((m, i) => {
-      const w = WIN[i], tot = m.paid + m.pend + m.est, has = m.items.length > 0, open = openMonths.has(i) && has;
+      const w = WIN[i], tot = m.paid + m.pend + m.est;
       const exp = expense > 0 ? `<div class="exp" style="left:${(expense / max * 100).toFixed(2)}%"></div>` : '';
       const yd = (i === 0 || w.m === 1) ? `<div class="ydiv">${w.y} 年</div>` : '';
       return `${yd}
-      <div class="mrow ${has ? '' : 'empty'} ${open ? 'open' : ''} ${i === 0 ? 'cur' : ''}" data-m="${i}" role="button" aria-expanded="${open}">
+      <div class="mrow ${i === 0 ? 'cur' : ''}">
         <div class="m">${w.m} 月</div>
         <div class="track"><div class="fill" style="width:${(tot / max * 100).toFixed(2)}%"><div class="paid" style="flex:${m.paid}"></div><div class="pend" style="flex:${m.pend}"></div><div class="est" style="flex:${m.est}"></div></div>${exp}</div>
         <div class="amt ${tot ? '' : 'dash'}">${tot ? 'NT$' + fmt(tot) : '—'}</div>
-        <div class="chev"></div>
-      </div>
-      <div class="detail ${open ? 'open' : ''}">${has ? detail(m) : ''}</div>`;
+      </div>`;
     }).join('');
-    document.querySelectorAll('.mrow:not(.empty)').forEach(r => r.onclick = () => {
-      const i = +r.dataset.m; openMonths.has(i) ? openMonths.delete(i) : openMonths.add(i); render();
-    });
   }
-  $('note').innerHTML = `<b>計算方式</b>：以目前庫存股數計算，期間為本月起滾動 12 個月（${rangeTxt}）；每筆股息 = 股數 × 每股現金股利，於「股息發放日」入帳，只要發放日落在期間內就計入（不考慮買進時間），不再投入。只計現金股利，<b>配股不計</b>。標示「日期推估」的，發放日或金額依過去規律推估。
+  $('note').innerHTML = `<b>計算方式</b>：以目前庫存股數計算，期間為本月起滾動 12 個月（${rangeTxt}）；每筆股息 = 股數 × 每股現金股利，於「股息發放日」入帳，只要發放日落在期間內就計入（不考慮買進時間），不再投入。只計現金股利，<b>配股不計</b>。尚未公布發放日的，以除息日後約 30 天推估；部分月配 ETF 的發放日或金額依過去規律推估。
   <br><b>預估</b>：尚未公告的配息，個股依去年同期、ETF 依最近一次配息金額與配息頻率往後推算；去年同期已過一個月仍未公告的視為停發。實際以公司公告為準。
   <br><b>實際入帳會再少一些</b>：畫面金額為股利總額，未扣除以下費用。①二代健保補充保費：單筆股利達 NT$${fmt(NHI_MIN)} 元，由發放單位直接扣 ${(NHI_RATE * 100).toFixed(2)}%（例：單筆 3 萬元扣 ${fmt(30000 * NHI_RATE)} 元；單筆上限 1,000 萬元；年度結算新制已暫緩，若有變動以健保署公告為準）。ETF 只有收益分配中的股利所得部分要扣。②匯費：每筆約 10 元，依各公司規定。③股利所得稅：隔年 5 月報稅時，可選「合併計稅」（股利 8.5% 可抵減稅額，每戶上限 8 萬元）或「分開計稅」（28% 單一稅率），依個人稅率而定，入帳時不會先扣。
   <br>資料：雪鴞 API，資料日 ${DATA.updated ? ymd(DATA.updated) : '—'}。依歷史資料試算，不代表未來配息，不構成投資建議。${SIM ? `<br>目前為模擬模式：站在 ${SIM} 看畫面。` : ''}`;
-}
-function detail(m) {
-  const sum = `<div class="msum">${m.paid ? `已入帳 ${fmt(m.paid)}・` : ''}${m.pend ? `待發放 ${fmt(m.pend)}・` : ''}${m.est ? `預估 ${fmt(m.est)}` : ''}`.replace(/・$/, '') + '</div>';
-  return m.items.map(x => {
-    const s = DATA.sec[x.code] || [x.code, ''];
-    const tag = x.estimate ? '<span class="tag est">預估</span>' : x.paid ? '<span class="tag paid">已入帳</span>' : '<span class="tag pend">待發放</span>';
-    const inf = !x.estimate && (x.est || x.inferred) ? '<span class="tag est">日期推估</span>' : '';
-    const line = x.estimate
-      ? `預計 ${md(x.pay)} 前後發放・${lots(x.sh)} × NT$ ${+x.cash.toFixed(4)}・${x.basis}`
-      : `${md(x.pay)} 發放・${lots(x.sh)} × NT$ ${+x.cash.toFixed(4)} 每股・${x.ex.slice(0, 4) === x.pay.slice(0, 4) ? md(x.ex) : ymd(x.ex)} 除息`;
-    return `<div class="ev${x.estimate ? ' estc' : ''}">
-      <div class="c">${x.code}${tag}${inf}</div>
-      <div class="a">NT$${fmt(x.amt)}</div>
-      <div class="n">${s[0]}${s[1] ? '・' + s[1] : ''}</div>
-      <div class="f">${line}</div>
-    </div>`;
-  }).join('') + sum;
 }
 /* ---------- 庫存編輯 ---------- */
 let draft = [];
@@ -414,7 +374,7 @@ function save() {
   store.set(KEY_H, holdings);
   syncURL();
   postToApp({ type: 'holdings', h: encodeH(holdings) });
-  openMonths.clear(); closeSheet(); render(); toast('庫存已儲存');
+  closeSheet(); render(); toast('庫存已儲存');
 }
 /* ---------- 分享連結 ---------- */
 function copyText(t) {
