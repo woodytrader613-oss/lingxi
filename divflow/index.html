@@ -76,6 +76,20 @@ body{min-height:100vh;display:flex;justify-content:center}
 .how .mt .f{display:block;margin-top:4px;padding:6px 8px;border-radius:8px;background:var(--panel2);font-size:11.5px;color:var(--ink2);line-height:1.6}
 .how .grp{margin:14px 0 2px;padding:5px 10px;border-radius:9px;background:var(--panel2);font-size:12.5px;font-weight:700;color:var(--ink)}
 .how .bt{margin:8px 0 0;font-size:11.5px;color:var(--muted);line-height:1.65;border-left:2px solid var(--line2);padding-left:8px}
+.bts table.bt{width:100%;border-collapse:collapse;margin:8px 0 2px;font-size:11.5px}
+.bts table.bt th{font-weight:600;color:var(--muted);text-align:right;padding:5px 4px;border-bottom:1px solid var(--line)}
+.bts table.bt th:first-child,.bts table.bt td:first-child{text-align:left}
+.bts table.bt td{color:var(--ink2);text-align:right;padding:5px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+.bts table.bt td:first-child{white-space:normal}
+.bts table.bt tr.cur td{color:#9fd6ff;font-weight:700}
+.bts .btx{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}
+.bts table.ex{font-size:11px}
+.bts table.ex th,.bts table.ex td{padding:5px 3px}
+.bts table.ex td:first-child{min-width:96px}
+.bts table.ex small{display:block;font-size:10px;color:var(--muted);font-weight:400}
+.bts table.ex td.act{color:#ffd27a;font-weight:700}
+.bts table.ex td.ok{color:#fff;font-weight:700}
+.bts .sub b{color:var(--ink2)}
 .how .com{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim);line-height:1.7}
 .emptyhint{text-align:center;padding:30px 10px;color:var(--muted);font-size:14px;line-height:1.8}
 /* 庫存編輯（獨立畫面） */
@@ -151,7 +165,7 @@ body{min-height:100vh;display:flex;justify-content:center}
         <div class="h">歷年殖利率平均<span class="tag cur" hidden>目前使用</span></div>
         <span class="f">一年預估 ＝ 歷年「每年殖利率」的平均 × 最新收盤價</span>
       </div>
-      <p class="bt">回測（2014 年起、159 檔 ETF，預估落在實際 ±20% 內的比例）：保守預估 53%、歷年配息平均 45%、歷年殖利率平均 38%；保守預估高估的比例 29%。債券 ETF 最準，年配與市值型 ETF 各方法都不準。</p>
+      <p class="bt">回測（2014 年起、159 檔 ETF，預估落在實際 ±20% 內的比例）：保守預估 59%、歷年配息平均 45%、歷年殖利率平均 38%；保守預估高估的比例 27%。債券 ETF 最準，年配與市值型 ETF 各方法都不準。完整數字見下方「回測結果」。</p>
 
       <div class="grp">個股（產業股票）</div>
       <div class="mt" data-m="cons">
@@ -177,6 +191,58 @@ body{min-height:100vh;display:flex;justify-content:center}
       <p class="bt">回測（2014 年起、1,691 檔個股含已下市，預估落在實際 ±20% 內的比例）：保守預估 35%、歷年配息平均 25%、歷年殖利率平均 31%；保守預估高估的比例 26%，歷年配息平均 35%。個股多為一年配一次、配多少看當年獲利，比 ETF 難預測；配息穩定的公司保守預估可達 50%。</p>
 
       <p class="com">共同規則：一年配息次數以最近一年實際配息次數為準；歷年類方法算到去年為止（今年還沒過完），中間沒配息的年份以 0 計，上市或開始配息的第一年若不足一整年不計入；只計現金股利，不計配股。預估月份依最近一年各次配息的發放月份排入。</p>
+    </div>
+    <div class="card how bts" id="bt" hidden>
+      <h3>回測結果：各種預估方法準不準</h3>
+      <p class="sub">做法：從 2014 年起，站在每一次除息日，只用當天以前的資料預估「之後一年」可領的現金股利，再和實際領到的比。<b>命中率</b>＝預估落在實際 80%～120% 的比例；<b>高估</b>＝預估比實際多的比例（越低越保守）；<b>預估÷實際</b>＝中位數，1.00 代表剛好。每一檔權重相同。選法事先定好：高估不超過 30% 的方法中，命中率最高者。</p>
+
+      <div class="grp">ETF（159 檔，2,608 個預測時點）</div>
+      <table class="bt"><thead><tr><th>方法</th><th>命中率</th><th>高估</th><th>預估÷實際</th></tr></thead><tbody><tr class="cur"><td>保守預估（現行）</td><td>58.5%</td><td>27.4%</td><td>0.91</td></tr><tr><td>① 歷年配息平均</td><td>44.8%</td><td>26.9%</td><td>0.85</td></tr><tr><td>② 近 10 年平均</td><td>44.8%</td><td>26.9%</td><td>0.85</td></tr><tr><td>③ 歷年殖利率平均</td><td>38.0%</td><td>24.7%</td><td>0.80</td></tr><tr><td>④ 近一年實配</td><td>55.1%</td><td>36.9%</td><td>0.94</td></tr><tr><td>⑤ 最近 1 期</td><td>58.5%</td><td>38.0%</td><td>0.95</td></tr><tr><td>⑤ 最近 3 期</td><td>60.5%</td><td>35.6%</td><td>0.94</td></tr><tr><td>⑤ 最近 1 年份</td><td>54.9%</td><td>34.9%</td><td>0.93</td></tr><tr><td>保守（⑤ 取 1 年份）</td><td>53.1%</td><td>28.9%</td><td>0.90</td></tr></tbody></table>
+      <p class="bt">依類型（命中率／高估）</p>
+      <table class="bt"><thead><tr><th>分組</th><th>保守預估</th><th>歷年配息平均</th></tr></thead><tbody><tr><td>高股息（22 檔）</td><td>36.0%／25.3%</td><td>31.2%／32.8%</td></tr><tr><td>市值、主題型（50 檔）</td><td>31.6%／21.1%</td><td>18.0%／23.8%</td></tr><tr><td>債券（87 檔）</td><td>75.2%／30.7%</td><td>64.5%／27.6%</td></tr></tbody></table>
+      <p class="bt">⑤ 要取幾期（歷史 3 年以上的 122 檔）：期數越多越保守、命中越低，3～4 期最平衡。</p>
+      <table class="bt"><thead><tr><th>⑤ 取最近幾期</th><th>命中率</th><th>高估</th></tr></thead><tbody><tr><td>1 期</td><td>62.8%</td><td>36.0%</td></tr><tr><td>2 期</td><td>62.5%</td><td>33.0%</td></tr><tr><td>3 期</td><td>59.7%</td><td>30.2%</td></tr><tr><td>4 期</td><td>61.5%</td><td>28.5%</td></tr><tr><td>6 期</td><td>60.0%</td><td>26.7%</td></tr><tr><td>12 期</td><td>49.9%</td><td>20.6%</td></tr></tbody></table>
+
+<p class="bt">舉例標的（每檔最近一次可以驗證的預測：站在預測日，預估之後一年每股可領現金股利，元；<b>粗體</b>＝落在實際 80%～120%，算命中；名稱下方小字＝預測日，以及這檔歷次預測中「保守預估 vs 歷年配息平均」各命中幾次）</p>
+<div class="btx"><table class="bt ex"><thead><tr><th>標的<small>預測日｜歷次命中 保守 vs ①</small></th><th>實際</th><th>①</th><th>③</th><th>④</th><th>⑤3期</th><th>保守</th></tr></thead><tbody>
+<tr><td>0050 元大台灣50<small>25/7/21｜8/21 vs 1/21</small></td><td class="act">1.36</td><td>0.64</td><td>1.64</td><td>0.68</td><td>0.70</td><td>0.68</td></tr>
+<tr><td>0056 元大高股息<small>25/10/23｜11/19 vs 2/19</small></td><td class="act">4.08</td><td>1.55</td><td>2.04</td><td class="ok">4.08</td><td class="ok">4.44</td><td class="ok">4.08</td></tr>
+<tr><td>00878 國泰永續高股息<small>25/11/18｜10/17 vs 6/20</small></td><td class="act">2.49</td><td>1.35</td><td>1.43</td><td>1.92</td><td>1.84</td><td>1.85</td></tr>
+<tr><td>00919 群益台灣精選高息<small>25/9/16｜6/6 vs 3/7</small></td><td class="act">2.86</td><td class="ok">2.80</td><td class="ok">2.43</td><td class="ok">2.88</td><td class="ok">2.64</td><td class="ok">2.63</td></tr>
+<tr><td>00929 復華台灣科技優息<small>25/11/19｜1/17 vs 5/23</small></td><td class="act">2.53</td><td>1.81</td><td>1.60</td><td>0.81</td><td>0.92</td><td>0.81</td></tr>
+<tr><td>00713 元大台灣高息低波<small>25/9/19｜4/16 vs 4/16</small></td><td class="act">3.34</td><td class="ok">2.94</td><td class="ok">3.41</td><td>5.40</td><td>5.22</td><td>5.24</td></tr>
+<tr><td>00940 元大台灣價值高息<small>25/11/6｜3/5 vs 0/11</small></td><td class="act">0.57</td><td>0.28</td><td>0.28</td><td>0.42</td><td class="ok">0.49</td><td>0.42</td></tr>
+<tr><td>00679B 元大美債20年<small>25/11/21｜21/30 vs 15/32</small></td><td class="act">1.12</td><td class="ok">1.04</td><td>0.80</td><td class="ok">1.24</td><td class="ok">1.19</td><td class="ok">1.24</td></tr>
+<tr><td>00720B 元大投資級公司債<small>25/10/23｜22/25 vs 24/28</small></td><td class="act">1.85</td><td class="ok">1.79</td><td class="ok">1.58</td><td class="ok">1.96</td><td class="ok">2.00</td><td class="ok">1.96</td></tr>
+<tr><td>00937B 群益ESG投等債20+<small>25/11/18｜10/10 vs 11/11</small></td><td class="act">0.86</td><td class="ok">0.91</td><td class="ok">0.85</td><td class="ok">0.93</td><td class="ok">0.86</td><td class="ok">0.92</td></tr>
+</tbody></table></div>
+<p class="bt">看法：債券型與配息穩定的高股息（00919、00679B、00720B、00937B）各方法都準；00929、00713 這類配息突然大幅調升或調降的，任何方法都很難事先抓到；年配的市值型（0050）各方法都偏低。</p>
+
+      <div class="grp">個股（產業股票，1,691 檔，13,058 個預測時點，含已下市）</div>
+      <table class="bt"><thead><tr><th>方法</th><th>命中率</th><th>高估</th><th>預估÷實際</th></tr></thead><tbody><tr class="cur"><td>保守預估（現行）</td><td>34.6%</td><td>25.5%</td><td>0.80</td></tr><tr><td>① 歷年配息平均</td><td>24.5%</td><td>34.9%</td><td>0.81</td></tr><tr><td>② 近 10 年平均</td><td>24.8%</td><td>35.0%</td><td>0.81</td></tr><tr><td>③ 歷年殖利率平均</td><td>30.7%</td><td>44.3%</td><td>0.93</td></tr><tr><td>④ 近一年實配</td><td>35.8%</td><td>34.6%</td><td>0.92</td></tr><tr><td>⑤ 最近 1 期</td><td>31.0%</td><td>42.3%</td><td>0.92</td></tr><tr><td>⑤ 最近 3 期</td><td>33.2%</td><td>45.6%</td><td>0.96</td></tr><tr><td>⑤ 最近 1 年份</td><td>31.1%</td><td>42.3%</td><td>0.92</td></tr><tr><td>保守（⑤ 取 1 年份）</td><td>32.2%</td><td>29.1%</td><td>0.83</td></tr></tbody></table>
+      <p class="bt">依分組（命中率／高估）</p>
+      <table class="bt"><thead><tr><th>分組</th><th>保守預估</th><th>歷年配息平均</th></tr></thead><tbody><tr><td>上市（915 檔）</td><td>36.5%／26.2%</td><td>25.3%／35.5%</td></tr><tr><td>上櫃（776 檔）</td><td>32.1%／24.7%</td><td>23.6%／34.2%</td></tr><tr><td>配息穩定（790 檔）</td><td>49.9%／24.8%</td><td>33.2%／28.9%</td></tr><tr><td>配息不穩定</td><td>29.8%／25.8%</td><td>22.7%／36.2%</td></tr></tbody></table>
+      <p class="bt">⑤ 要取幾期（歷史 3 年以上的 1,502 檔）：個股多為一年配一次，期數影響不大，單獨用 ⑤ 都高估太多（42%～51%），要和近一年實配取低才夠保守。</p>
+      <table class="bt"><thead><tr><th>⑤ 取最近幾期</th><th>命中率</th><th>高估</th></tr></thead><tbody><tr><td>1 期</td><td>32.7%</td><td>42.4%</td></tr><tr><td>2 期</td><td>33.9%</td><td>46.1%</td></tr><tr><td>3 期</td><td>33.2%</td><td>45.6%</td></tr><tr><td>4 期</td><td>34.6%</td><td>47.4%</td></tr><tr><td>6 期</td><td>35.6%</td><td>48.6%</td></tr><tr><td>8 期</td><td>35.8%</td><td>51.3%</td></tr></tbody></table>
+
+<p class="bt">舉例標的（欄位同上 ETF 表；金額已依配股、分割、減資換算成現在每股）</p>
+<div class="btx"><table class="bt ex"><thead><tr><th>標的<small>預測日｜歷次命中 保守 vs ①</small></th><th>實際</th><th>①</th><th>③</th><th>④</th><th>⑤3期</th><th>保守</th></tr></thead><tbody>
+<tr><td>2330 台積電<small>25/9/16｜19/31 vs 1/31</small></td><td class="act">22.00</td><td>7.71</td><td>37.09</td><td>17.00</td><td class="ok">21.21</td><td>17.00</td></tr>
+<tr><td>2454 聯發科<small>25/7/3｜5/14 vs 1/14</small></td><td class="act">54.00</td><td>26.14</td><td class="ok">59.82</td><td class="ok">59.41</td><td class="ok">56.05</td><td class="ok">56.05</td></tr>
+<tr><td>2317 鴻海<small>25/7/2｜4/10 vs 1/12</small></td><td class="act">5.80</td><td>3.95</td><td class="ok">6.03</td><td class="ok">5.40</td><td>7.63</td><td class="ok">5.40</td></tr>
+<tr><td>2412 中華電<small>25/7/3｜10/11 vs 10/11</small></td><td class="act">5.00</td><td class="ok">4.86</td><td>6.07</td><td class="ok">4.76</td><td class="ok">5.10</td><td class="ok">4.76</td></tr>
+<tr><td>2881 富邦金<small>25/7/1｜4/10 vs 5/12</small></td><td class="act">4.15</td><td>1.74</td><td class="ok">3.39</td><td>2.32</td><td>2.37</td><td>2.32</td></tr>
+<tr><td>2886 兆豐金<small>25/8/7｜9/10 vs 9/12</small></td><td class="act">1.60</td><td class="ok">1.34</td><td>2.05</td><td class="ok">1.46</td><td class="ok">1.55</td><td class="ok">1.46</td></tr>
+<tr><td>2891 中信金<small>25/7/14｜4/12 vs 1/12</small></td><td class="act">2.30</td><td>0.75</td><td>1.57</td><td>1.80</td><td class="ok">1.96</td><td>1.80</td></tr>
+<tr><td>1101 台泥<small>25/7/2｜3/12 vs 0/12</small></td><td class="act">1.00</td><td>1.47</td><td class="ok">1.19</td><td class="ok">1.00</td><td>0.63</td><td>0.63</td></tr>
+<tr><td>2002 中鋼<small>25/7/24｜3/9 vs 1/11</small></td><td class="act">0.33</td><td>0.88</td><td>0.66</td><td class="ok">0.35</td><td>0.68</td><td class="ok">0.35</td></tr>
+<tr><td>2603 長榮<small>25/6/19｜0/4 vs 0/4</small></td><td class="act">32.50</td><td>12.80</td><td>17.45</td><td>9.97</td><td>40.89</td><td>9.97</td></tr>
+<tr><td>3711 日月光投控<small>25/7/2｜1/5 vs 3/7</small></td><td class="act">5.30</td><td class="ok">4.60</td><td>6.42</td><td class="ok">5.20</td><td>10.44</td><td class="ok">5.20</td></tr>
+<tr><td>6274 台燿<small>25/4/17｜4/11 vs 0/12</small></td><td class="act">6.50</td><td>2.92</td><td class="ok">5.76</td><td>4.01</td><td>7.85</td><td>4.01</td></tr>
+</tbody></table></div>
+<p class="bt">看法：中華電、兆豐金這類配息穩定的股票各方法都準；台積電、聯發科這類配息逐年成長的，歷年配息平均嚴重偏低（台積電歷次只命中 1 次），保守預估明顯較好；長榮這類景氣循環股配多少看當年獲利，所有方法都不準。</p>
+
+      <p class="com">結論：ETF 與個股都由「保守預估」勝出——命中率接近最高、高估比例最低之一。個股整體比 ETF 難預測（多為一年配一次、配多少看當年獲利），年配、市值型 ETF 各方法也都不準。資料：證交所、櫃買中心官方除權息資料（ETF 2008 年起 4,566 筆；個股 22,363 筆，同日配股配息的現金股利由雪鴞補）。ETF 只含目前仍上市櫃者（已下市的不在內，結果可能略為樂觀）。</p>
     </div>
   </div>
   </div>
@@ -379,7 +445,8 @@ function render() {
       </div>`;
     }).join('');
   }
-  $('how').hidden = !DEMO;                                      // 預估方法說明只在 ?demo=1 顯示（使用者 11/18 決定）
+  $('how').hidden = !DEMO;
+  $('bt').hidden = !DEMO;                                       // 回測結果也只在 DEMO 顯示                                      // 預估方法說明只在 ?demo=1 顯示（使用者 11/18 決定）
   document.querySelectorAll('#how .mt').forEach(el => {          // 預估方法說明：標出目前使用的方法（ETF 用 cons 時個股實際用 amt）
     const on = el.dataset.m === METHOD;
     el.classList.toggle('on', on);
