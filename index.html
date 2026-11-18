@@ -210,7 +210,6 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
             <div class="grid" id="grid"></div>
             <p class="note">點月份卡片，選這個月要買的 ETF（每月一檔）。同一檔選幾個月，就占幾份比重。</p>
             <div class="btnrow">
-              <button type="button" class="btn" id="btnShare">複製分享連結</button>
               <button type="button" class="btn ghost" id="btnClear">全部清除</button>
             </div>
           </section>
@@ -284,9 +283,6 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
       <li>月複利率 = (1 + M)^(1/12) − 1；先找到達成的月份，再於該月內依複利曲線推算到日。</li>
       <li>未計交易成本、稅金與二代健保補充保費；超過 100 年視為無法達成。</li>
     </ul>
-    <h3>本次計算明細</h3>
-    <div class="tbl-wrap"><table class="doc" id="traceTable"><thead><tr><th>標的</th><th>月份</th><th>投入</th><th>年化報酬率</th><th>預估殖利率</th></tr></thead><tbody></tbody></table></div>
-    <div id="traceSum"></div>
     <h3>不予計算的標的</h3>
     <p>下列 ETF 不提供預估，選單中反灰、不能選：</p>
     <ul>
@@ -505,13 +501,10 @@ function render() {
         <div class="kpi"><span>預估殖利率</span><b>${pct(r.N)}</b><small>年化</small></div>
       </div>
       <div class="total"><span>年度總投入（${r.k} 個月 × $${fmt0(r.amount)}）</span><b>$${fmt0(r.total)}</b></div>
-      <table class="rtable"><thead><tr><th>標的</th><th class="r">投入</th><th class="r">年化報酬</th><th class="r">殖利率</th></tr></thead><tbody>
-        ${r.groups.map(g => `<tr><td><b style="color:${col[g.code]}">${esc(g.code)}</b> <small>${g.n} 個月</small><br><small>${esc(NAMES[g.code] || '')}</small></td><td class="r">$${fmt0(g.invest)}</td><td class="r">${pct(g.x, true)}</td><td class="r">${pct(g.y)}</td></tr>`).join('')}
-      </tbody></table>${skipNote}
+${skipNote}
       <p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。${DEMO ? `目前算法：${METHOD_NAME[method]}。` : ''}</p>`;
   }
   renderRetire(r);
-  renderTrace(r, col);
 }
 function renderRetire(r) {
   const box = $('retire');
@@ -529,19 +522,6 @@ function renderRetire(r) {
   box.innerHTML = `<div class="ret"><span class="k">可以退休的日期</span><span class="date">${fmtDate(res.date)}</span>
     <div class="sub">還要約 ${res.R.toFixed(1)} 年（${yrs ? yrs + ' 年' : ''}${mos ? mos + ' 個月' : ''}）</div>${facts}</div>`;
 }
-function renderTrace(r, col) {
-  const tb = $('traceTable').querySelector('tbody');
-  tb.innerHTML = r.groups.map(g => `<tr><td><b style="color:${col[g.code]}">${esc(g.code)}</b> ${esc(NAMES[g.code] || '')}</td><td>${g.months.map(m => m + ' 月').join('、')}</td><td class="num">$${fmt0(g.invest)}</td>
-      <td class="num">${pct(g.x, true)}<br><small>${ym(g.xFrom)}～${ym(g.xTo)}</small></td>
-      <td class="num">${pct(g.y)}<br><small>${g.noDiv ? '從未配息' : `${FREQ[g.perYear] || ''}・${g.years} 年資料`}</small></td></tr>`).join('')
-    || '<tr><td colspan="5" style="color:var(--muted)">尚未設定任何月份</td></tr>';
-  $('traceSum').innerHTML = r.k ? `<div class="formula">算法：${METHOD_NAME[method]}
-年度總投入 = ${fmt0(r.amount)} × ${r.k} = ${fmt0(r.total)}
-預估報酬率 M = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.x * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.M, true)}</em>
-預估殖利率 N = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.y * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.N)}</em>
-需要的股票市值 Y = ${fmt0(goal.x)} × 12 ÷ ${(r.N * 100).toFixed(2)}% = <em>${r.N > 0 ? fmt0(goal.x * 12 / r.N) : '—'}</em></div>` : '';
-}
-
 /* ===== 月份設定（只選 ETF）===== */
 let editM = null, draftCode = null;
 function openSheet(m) {
@@ -559,7 +539,7 @@ function openSheet(m) {
 function closeSheet() { $('sheetBg').classList.remove('show'); $('sheetBg').setAttribute('aria-hidden', 'true'); editM = null; }
 function tagOf(code) {
   const r = metricsOf(code, method, DB);
-  return r.reason ? r.reason : `報酬 ${pct(r.x, true)}・殖利率 ${pct(r.y)}`;
+  return r.reason || '';
 }
 function renderPicker() {
   const q = $('search').value.trim().toLowerCase();
@@ -575,9 +555,7 @@ function renderPicker() {
     box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => choose(b.dataset.c));
   } else box.innerHTML = '';
   const r = draftCode ? metricsOf(draftCode, method, DB) : null;
-  $('chosen').innerHTML = draftCode ? (!r.reason ? `<div class="chosen"><div class="nm"><b>${esc(draftCode)}</b>${esc(NAMES[draftCode] || '')}</div><dl>
-      <dt>年化報酬率</dt><dd>${pct(r.x, true)}（${ym(r.xFrom)}～${ym(r.xTo)}）</dd>
-      <dt>預估殖利率</dt><dd>${pct(r.y)}（${r.noDiv ? '從未配息' : `${FREQ[r.perYear] || ''}，${r.years} 年資料`}）</dd></dl></div>`
+  $('chosen').innerHTML = draftCode ? (!r.reason ? `<div class="chosen"><div class="nm"><b>${esc(draftCode)}</b>${esc(NAMES[draftCode] || '')}</div></div>`
     : `<div class="chosen" style="border-color:var(--warn)"><div class="nm"><b style="color:var(--warn)">${esc(draftCode)}</b>${esc(NAMES[draftCode] || '')}</div><p class="note" style="margin:4px 0 0">${esc(r.reason)}，不列入計算，請改選其他標的。</p></div>`)
     : '<p class="note">搜尋或點選常用標的。</p>';
   $('sheetOk').disabled = !!(r && r.reason);
@@ -626,16 +604,6 @@ if (DEMO) {
   });
   $('swContrib').onclick = () => { includeA = !includeA; $('swContrib').setAttribute('aria-checked', includeA); render(); };
 }
-$('btnShare').onclick = () => {
-  const u = new URL(location.href);
-  ['embed', 'header', 'demo'].forEach(k => u.searchParams.delete(k));
-  u.searchParams.set('plan', encodePlan(plan));
-  u.searchParams.set('x', Math.round(goal.x)); u.searchParams.set('z', Math.round(goal.z)); u.searchParams.set('inf', goal.inf);
-  u.hash = '';
-  const link = u.toString();
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(() => toast('已複製分享連結'), () => prompt('複製這個連結', link));
-  else prompt('複製這個連結', link);
-};
 $('btnClear').onclick = () => { if (!Object.keys(plan.months).length) return; plan.months = {}; save(); render(); toast('已清除全部月份'); };
 $('btnBack').onclick = closeToApp;
 
