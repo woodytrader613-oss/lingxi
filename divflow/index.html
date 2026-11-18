@@ -67,13 +67,15 @@ body{min-height:100vh;display:flex;justify-content:center}
 .how h3{margin:0 0 4px;font-size:14px;color:var(--ink)}
 .how .sub{margin:0 0 10px;font-size:12px;color:var(--muted);line-height:1.6}
 .how .mt{border-top:1px solid var(--line);padding:10px 0}
-.how .mt:first-of-type{border-top:0}
+.how .grp + .mt{border-top:0}
 .how .mt .h{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--ink2)}
 .how .mt .tag{font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:9px;border:1px solid var(--line2);color:var(--muted)}
 .how .mt.on .h{color:var(--ink)}
 .how .mt.on .tag.cur{border-color:rgba(110,195,255,.6);color:#9fd6ff}
 .how .mt p{margin:4px 0 0;font-size:12px;color:var(--muted);line-height:1.65}
 .how .mt .f{display:block;margin-top:4px;padding:6px 8px;border-radius:8px;background:var(--panel2);font-size:11.5px;color:var(--ink2);line-height:1.6}
+.how .grp{margin:14px 0 2px;padding:5px 10px;border-radius:9px;background:var(--panel2);font-size:12.5px;font-weight:700;color:var(--ink)}
+.how .bt{margin:8px 0 0;font-size:11.5px;color:var(--muted);line-height:1.65;border-left:2px solid var(--line2);padding-left:8px}
 .how .com{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim);line-height:1.7}
 .emptyhint{text-align:center;padding:30px 10px;color:var(--muted);font-size:14px;line-height:1.8}
 /* 庫存編輯（獨立畫面） */
@@ -128,29 +130,53 @@ body{min-height:100vh;display:flex;justify-content:center}
     <p class="note" id="note"></p>
     <div class="card how" id="how" hidden>
       <h3>預估方法說明</h3>
-      <p class="sub">每一檔先估「未來一年每股可領多少」，再依一年配息次數平均分到各期、乘上持有股數。<span id="howCur"></span></p>
+      <p class="sub">每一檔先估「未來一年每股可領多少現金股利」，再依一年配息次數平均分到各期、乘上持有股數。ETF 與個股（產業股票）用同一個算法選項，但資料與換算方式不同，分開說明如下。<span id="howCur"></span></p>
+
+      <div class="grp">ETF</div>
       <div class="mt" data-m="cons">
         <div class="h">保守預估<span class="tag">預設</span><span class="tag cur" hidden>目前使用</span></div>
         <p>看最近的配息水準，但不超過近一年實際配過的金額。</p>
-        <span class="f">一年預估 ＝ 取較低者：<br>① 最近 3 次配息殖利率（配息 ÷ 除息前股價）的中位數 × 一年配息次數 × 最新收盤價<br>② 近一年實際配息合計</span>
-        <p>ETF 與個股都適用；個股的配股、分割、減資會先換算成現在的每股。依證交所、櫃買中心官方除權息資料計算；少數無法確認配息金額的個股改用「歷年配息平均」。</p>
+        <span class="f">一年預估 ＝ 取較低者：<br>① 最近 3 次配息殖利率（每單位配息 ÷ 除息前收盤價）的中位數 × 一年配息次數 × 最新收盤價<br>② 近一年實際配息合計</span>
+        <p>資料：證交所、櫃買中心官方除息資料（近 3 年）；ETF 分割、反分割依官方公告換算成現在的每單位。</p>
       </div>
       <div class="mt" data-m="amt">
         <div class="h">歷年配息平均<span class="tag cur" hidden>目前使用</span></div>
-        <p>用每年每股配息合計，取全部歷史年份的平均。</p>
-        <span class="f">一年預估 ＝ 從第一次配息那年到去年，每年每股配息合計的平均</span>
+        <span class="f">一年預估 ＝ 從第一次配息那年到去年，每年每單位配息合計的平均</span>
       </div>
       <div class="mt" data-m="amt10">
         <div class="h">近 10 年平均<span class="tag cur" hidden>目前使用</span></div>
-        <p>同「歷年配息平均」，但只取最近 10 個完整年度，較貼近近年水準。</p>
-        <span class="f">一年預估 ＝ 去年往回 10 年，每年每股配息合計的平均（不足 10 年用全部）</span>
+        <span class="f">一年預估 ＝ 去年往回 10 年，每年每單位配息合計的平均（不足 10 年用全部）</span>
       </div>
       <div class="mt" data-m="yld">
         <div class="h">歷年殖利率平均<span class="tag cur" hidden>目前使用</span></div>
-        <p>用每年的殖利率平均，再換算成現在股價下的配息；股價漲跌會反映在預估金額。</p>
-        <span class="f">一年預估 ＝ 歷年「每年殖利率（各期配息 ÷ 除息前股價的合計）」的平均 × 最新收盤價</span>
+        <span class="f">一年預估 ＝ 歷年「每年殖利率」的平均 × 最新收盤價</span>
       </div>
-      <p class="com">共同規則：一年配息次數以最近一年實際配息次數為準；歷年類方法算到去年為止（今年還沒過完），中間沒配息的年份以 0 計，上市或開始配息的第一年若不足一整年不計入；股票分割、面額變更依交易所公告換算成現在的每股；只計現金股利，不計配股。預估月份依最近一年各次配息的發放月份排入。</p>
+      <p class="bt">回測（2014 年起、159 檔 ETF，預估落在實際 ±20% 內的比例）：保守預估 53%、歷年配息平均 45%、歷年殖利率平均 38%；保守預估高估的比例 29%。債券 ETF 最準，年配與市值型 ETF 各方法都不準。</p>
+
+      <div class="grp">個股（產業股票）</div>
+      <div class="mt" data-m="cons">
+        <div class="h">保守預估<span class="tag">預設</span><span class="tag cur" hidden>目前使用</span></div>
+        <p>同 ETF：最近 3 次現金股利殖利率推估值，與近一年實際配的現金股利，取較低者。</p>
+        <span class="f">一年預估 ＝ 取較低者：<br>① 最近 3 次「現金股利 ÷ 除權息前收盤價」的中位數 × 一年配息次數 × 最新收盤價<br>② 近一年實際現金股利合計</span>
+        <p>個股會配股、分割（面額變更）、減資，股數會變，所以過去的現金股利都先換算成現在的每股再比較。同一天配股又配息時，官方只公布合計，現金股利另由雪鴞資料補上；近一年有無法確認金額的個股，改用「歷年配息平均」。</p>
+      </div>
+      <div class="mt" data-m="amt">
+        <div class="h">歷年配息平均<span class="tag cur" hidden>目前使用</span></div>
+        <span class="f">一年預估 ＝ 從第一次配息那年到去年，每年每股現金股利合計的平均</span>
+        <p>獲利成長的公司會明顯低估、配息衰退的公司會高估。</p>
+      </div>
+      <div class="mt" data-m="amt10">
+        <div class="h">近 10 年平均<span class="tag cur" hidden>目前使用</span></div>
+        <span class="f">一年預估 ＝ 去年往回 10 年，每年每股現金股利合計的平均（不足 10 年用全部）</span>
+      </div>
+      <div class="mt" data-m="yld">
+        <div class="h">歷年殖利率平均<span class="tag cur" hidden>目前使用</span></div>
+        <span class="f">一年預估 ＝ 歷年「每年殖利率」的平均 × 最新收盤價</span>
+        <p>股價大漲的公司會明顯高估（例如股價漲幅遠大於配息成長時）。</p>
+      </div>
+      <p class="bt">回測（2014 年起、1,691 檔個股含已下市，預估落在實際 ±20% 內的比例）：保守預估 35%、歷年配息平均 25%、歷年殖利率平均 31%；保守預估高估的比例 26%，歷年配息平均 35%。個股多為一年配一次、配多少看當年獲利，比 ETF 難預測；配息穩定的公司保守預估可達 50%。</p>
+
+      <p class="com">共同規則：一年配息次數以最近一年實際配息次數為準；歷年類方法算到去年為止（今年還沒過完），中間沒配息的年份以 0 計，上市或開始配息的第一年若不足一整年不計入；只計現金股利，不計配股。預估月份依最近一年各次配息的發放月份排入。</p>
     </div>
   </div>
   </div>
