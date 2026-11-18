@@ -221,7 +221,8 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
             <div class="demo" id="demoBar" hidden>
               <div class="lbl">DEMO：預估算法</div>
               <div class="seg" id="methodSeg" role="group" aria-label="預估算法">
-                <button type="button" data-m="m10" aria-pressed="true">近 10 年平均</button>
+                <button type="button" data-m="cons" aria-pressed="true">保守預估</button>
+                <button type="button" data-m="m10" aria-pressed="false">近 10 年平均</button>
                 <button type="button" data-m="amt" aria-pressed="false">歷年配息平均</button>
                 <button type="button" data-m="yld" aria-pressed="false">歷年殖利率平均</button>
               </div>
@@ -262,7 +263,8 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 預估殖利率 <em>N</em> = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
 （每月金額相同，等於有設定月份的平均；同一檔選幾個月就占幾份）</div>
     <div class="tbl-wrap"><table class="doc"><thead><tr><th>算法</th><th>年化報酬率</th><th>預估殖利率</th></tr></thead><tbody>
-      <tr><td>近 10 年平均（預設）</td><td>上市至今還原股價年化（算到最近一個交易日）</td><td>近 10 年平均每年配息 ÷ 最近一個交易日收盤價</td></tr>
+      <tr><td>保守預估（預設）</td><td>上市至今還原股價年化（算到最近一個交易日）</td><td>「最近 3 次配息殖利率的中位數 × 一年配息次數」與「近一年實際配息 ÷ 最近一個交易日收盤價」取較低者</td></tr>
+      <tr><td>近 10 年平均</td><td>上市至今還原股價年化（算到最近一個交易日）</td><td>近 10 年平均每年配息 ÷ 最近一個交易日收盤價</td></tr>
       <tr><td>歷年配息平均</td><td>上市至今還原股價年化（算到最近一個交易日）</td><td>歷年平均每年配息 ÷ 最近一個交易日收盤價</td></tr>
       <tr><td>歷年殖利率平均</td><td>上市至今還原股價年化（算到最近一個交易日）</td><td>歷年「每年殖利率」的平均</td></tr>
     </tbody></table></div>
@@ -357,7 +359,7 @@ function metricsOf(code, method, d) {
   const e = (d.est || {})[code], pn = ((d.prices || {})[code] || {}).pn;
   let y;
   if (e && pn > 0) {
-    const n = e[0], per = method === 'm10' ? e[4] : method === 'amt' ? e[1] : e[2];
+    const n = e[0], per = method === 'cons' ? (e[5] != null ? e[5] : e[4]) : method === 'm10' ? e[4] : method === 'amt' ? e[1] : e[2];   // 資料還沒有保守預估欄時先用近 10 年
     if (per == null) return { reason: '配息歷史不足' };
     y = n * per / pn;
   } else if (f.noDiv) y = 0;
@@ -422,9 +424,9 @@ function addMonths(d, n) {
 const PALETTE = ['#F5C542', '#3DD6C4', '#FF7A9A', '#7DB3FF', '#FFA24D', '#C3A2FF', '#8BE36A', '#FF8F6B', '#5FD0FF', '#E58BFF', '#D4C26A', '#9AA8FF'];
 const QUICK = ['0056', '00878', '00919', '0050', '006208', '00713', '00929', '00940'];
 const STORE_KEY = 'lingxi_plan_v3';
-const METHOD_NAME = { m10: '近 10 年平均', amt: '歷年配息平均', yld: '歷年殖利率平均' };
+const METHOD_NAME = { cons: '保守預估', m10: '近 10 年平均', amt: '歷年配息平均', yld: '歷年殖利率平均' };
 let DB = null, FC = {}, NAMES = {};
-let plan = { amount: 10000, months: {} }, goal = { x: 30000, z: 1000000, inf: 0 }, method = 'm10', includeA = true;
+let plan = { amount: 10000, months: {} }, goal = { x: 30000, z: 1000000, inf: 0 }, method = 'cons', includeA = true;   // 2026-11-18 預設改保守預估
 const $ = id => document.getElementById(id);
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2400); }
@@ -647,7 +649,7 @@ function onData(d) {
   initInputs();
   $('dataLabel').textContent = `資料至 ${String(d.base || '').replace(/-/g, '/')}`;
   const cnt = {}; let ok = 0;
-  Object.keys(FC).forEach(c => { const r = metricsOf(c, 'm10', d); if (r.reason) cnt[r.reason] = (cnt[r.reason] || 0) + 1; else ok++; });
+  Object.keys(FC).forEach(c => { const r = metricsOf(c, 'cons', d); if (r.reason) cnt[r.reason] = (cnt[r.reason] || 0) + 1; else ok++; });
   $('excludeCount').textContent = `目前資料庫共 ${Object.keys(FC).length} 檔 ETF，可預估 ${ok} 檔，不予計算 ${Object.keys(FC).length - ok} 檔（${Object.entries(cnt).map(([k, v]) => `${k} ${v} 檔`).join('、')}）。`;
   render();
   hideLoader();
