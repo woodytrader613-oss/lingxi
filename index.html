@@ -155,6 +155,10 @@ table.doc td{padding:8px 10px;border-bottom:1px solid #222B3A;vertical-align:top
 table.doc tr:last-child td{border-bottom:0}
 table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 
+.demoex{margin-top:40px;padding:4px 18px 18px;border-radius:14px;border:1px dashed #6b5a22;background:#14120B}
+.demoex .tag{display:inline-block;margin-top:14px;padding:2px 8px;border-radius:6px;background:var(--accent);color:#0E131C;font-size:12px;font-weight:700}
+.demoex .formula{white-space:pre-wrap;word-break:break-word;font-size:12.5px}
+.demoex select{height:40px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:15px}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);max-width:340px;padding:14px 16px;border-radius:12px;background:#2A3344;color:var(--ink);font-size:15px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:80}
 .toast.show{opacity:1}
 
@@ -293,7 +297,48 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
     </ul>
     <p id="excludeCount"></p>
     <h3>資料來源</h3>
-    <p>ETF 清單、還原月 K 線、收盤價與歷年配息資料（除息日、現金股利、除息參考價、一年配息次數）皆來自雪鴞 API，涵蓋上市與上櫃 ETF，每個交易日更新。</p>
+    <p data-src>ETF 清單、還原月 K 線、收盤價與歷年配息資料（除息日、現金股利、除息參考價、一年配息次數）皆來自雪鴞 API，涵蓋上市與上櫃 ETF，每個交易日更新。</p>
+    <section class="demoex" id="demoEx" hidden>
+      <span class="tag">DEMO</span>
+      <h2 style="margin-top:12px">計算方式與範例</h2>
+      <p>以下用實際資料示範每一步怎麼算。範例標的：<select id="exCode" aria-label="範例標的"></select></p>
+      <h3>一、年化報酬率（預估報酬率 M 的來源）</h3>
+      <div class="formula">年化報酬率 = (終點還原價 ÷ 起點還原價)^(1 ÷ 年數) − 1
+起點：上市當月的月底還原收盤價（2010 年以前上市的從 2010 年 1 月起算）
+終點：最近一個交易日的還原收盤價（月 K 算到上個月底，再用日 K 接到最近交易日）
+年數：起點月底到終點的天數 ÷ 365.25</div>
+      <ul>
+        <li>「還原價」是把歷年配息、分割都調整回去的股價，所以這個報酬率已經包含配息（股息再投入）。</li>
+        <li>四種算法的年化報酬率都一樣，差別只在預估殖利率。</li>
+      </ul>
+      <div id="exCagr"></div>
+      <h3>二、預估殖利率（預估殖利率 N 的來源）：四種算法</h3>
+      <div class="formula">預估殖利率 = 一年預估配息 ÷ 最近一個交易日收盤價
+一年預估配息 = 每期預估配息 × 一年配息次數
+一年配息次數 = 最近 350 天的除息次數，對齊到 1、2、4、6、12 次</div>
+      <div class="tbl-wrap"><table class="doc"><thead><tr><th>算法</th><th>一年預估配息怎麼來</th></tr></thead><tbody>
+        <tr><td><b>保守預估</b>（預設）</td><td>下面兩個取較低者：<br>⑤ 近期殖利率法＝最近 3 次除息「每股配息 ÷ 除息前收盤價」的中位數 × 一年配息次數 × 最新收盤價<br>④ 近一年實配＝最近 365 天實際除息的每股配息合計（未滿一年用平均每期 × 一年次數）<br>資料：證交所、櫃買中心官方除權息資料</td></tr>
+        <tr><td><b>近 10 年平均</b></td><td>近 10 年（去年往回 10 年）每年配息合計的平均；資料不足 10 年用全部</td></tr>
+        <tr><td><b>歷年配息平均</b></td><td>歷年（第一個完整配息年度～去年）每年配息合計的平均</td></tr>
+        <tr><td><b>歷年殖利率平均</b></td><td>歷年「每年殖利率」的平均 × 最新收盤價；每年殖利率＝當年各次「每股配息 ÷ 除息前收盤價」加總</td></tr>
+      </tbody></table></div>
+      <ul>
+        <li>年份以除息日歸年；今年還沒過完不算；中間某年沒配息以 0 計；股票分割以交易所公告換算成現在的每單位。</li>
+        <li>從未配息的 ETF，殖利率以 0% 計。</li>
+      </ul>
+      <div id="exYield"></div>
+      <h3>三、組合的預估報酬率 M、預估殖利率 N（依目前的年度配置）</h3>
+      <div class="formula">M = Σ(各月投入 × 該月標的年化報酬率) ÷ 年度總投入
+N = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
+每月金額相同，所以等於「有設定月份」的平均；同一檔選幾個月就占幾份</div>
+      <div id="exPlan"></div>
+      <h3>四、退休試算</h3>
+      <div class="formula">需要的股票市值 Y = 每月現金流目標 X × 12 ÷ N
+目前市值 Z 以 M 每月複利：月利率 = (1 + M)^(1/12) − 1；納入每月投入時每月底再加 A
+考慮通膨 i：t 年後需要 Y × (1 + i)^t
+資產第一次 ≥ 需要市值的那一天＝可以退休的日期</div>
+      <div id="exRetire"></div>
+    </section>
   </article>
 </main>
 
@@ -505,6 +550,7 @@ ${skipNote}
       <p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。${DEMO ? `目前算法：${METHOD_NAME[method]}。` : ''}</p>`;
   }
   renderRetire(r);
+  renderDemoEx();
 }
 function renderRetire(r) {
   const box = $('retire');
@@ -522,6 +568,67 @@ function renderRetire(r) {
   box.innerHTML = `<div class="ret"><span class="k">可以退休的日期</span><span class="date">${fmtDate(res.date)}</span>
     <div class="sub">還要約 ${res.R.toFixed(1)} 年（${yrs ? yrs + ' 年' : ''}${mos ? mos + ' 個月' : ''}）</div>${facts}</div>`;
 }
+/* ===== DEMO：計算方式與範例 ===== */
+function exCodes() {
+  const list = [];
+  for (let m = 1; m <= 12; m++) { const c = plan.months[m]; if (c && !list.includes(c) && !metricsOf(c, method, DB).reason) list.push(c); }
+  QUICK.forEach(c => { if (!list.includes(c) && FC[c] && !metricsOf(c, method, DB).reason) list.push(c); });
+  return list;
+}
+function fmtN(x, d) { return x.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function renderDemoEx() {
+  if (!DEMO || !DB) return;
+  const sel = $('exCode'), codes = exCodes();
+  const keep = codes.includes(sel.value) ? sel.value : codes[0];
+  sel.innerHTML = codes.map(c => `<option value="${esc(c)}">${esc(c)} ${esc(NAMES[c] || '')}</option>`).join('');
+  sel.value = keep;
+  const c = keep, f = FC[c], e = (DB.est || {})[c], p = (DB.prices || {})[c] || {};
+  if (!c || !f) return;
+  // 一、年化報酬率
+  const start = new Date(+f.cagrFrom.slice(0, 4), +f.cagrFrom.slice(5, 7), 0);          // 起點月份的月底
+  const end = f.cagrTo.length >= 10 ? new Date(+f.cagrTo.slice(0, 4), +f.cagrTo.slice(5, 7) - 1, +f.cagrTo.slice(8, 10))
+    : new Date(+f.cagrTo.slice(0, 4), +f.cagrTo.slice(5, 7), 0);
+  const yrs = (end - start) / 86400000 / 365.25, mult = Math.pow(1 + f.cagr, yrs);
+  const d2s = d => `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+  $('exCagr').innerHTML = `<div class="formula">範例：${esc(c)} ${esc(NAMES[c] || '')}
+起點 ${d2s(start)}（月底還原收盤）→ 終點 ${d2s(end)}（最近交易日還原收盤）
+年數 = ${Math.round((end - start) / 86400000).toLocaleString('en-US')} 天 ÷ 365.25 = ${fmtN(yrs, 2)} 年
+終點 ÷ 起點 = ${fmtN(mult, 4)} 倍（含配息）
+年化報酬率 = ${fmtN(mult, 4)}^(1 ÷ ${fmtN(yrs, 2)}) − 1 = <em>${pct(f.cagr, true)}</em></div>`;
+  // 二、四種預估殖利率
+  if (!e || !p.pn) {
+    $('exYield').innerHTML = `<p class="note">${esc(c)} ${f.noDiv ? '從未配息，四種算法的殖利率都是 0%。' : '沒有歷年配息資料。'}</p>`;
+  } else {
+    const n = e[0], rows = [
+      ['保守預估', e[5] != null ? e[5] : e[4], e[5] != null ? '⑤、④ 取較低者' : '（尚無官方資料，暫用近 10 年）'],
+      ['近 10 年平均', e[4], `近 ${Math.min(10, e[3])} 年平均`],
+      ['歷年配息平均', e[1], `${e[3]} 年平均`],
+      ['歷年殖利率平均', e[2], `歷年平均殖利率 ${pct(e[2] * n / p.pn)} × 收盤`]];
+    $('exYield').innerHTML = `<p>範例：${esc(c)}，一年配息 ${n} 次（${FREQ[n] || ''}），最近交易日 ${String(p.pnDate || '').replace(/-/g, '/')} 收盤 ${p.pn} 元。</p>
+      <div class="tbl-wrap"><table class="doc"><thead><tr><th>算法</th><th>說明</th><th>每期預估配息</th><th>一年預估配息</th><th>預估殖利率</th></tr></thead><tbody>
+      ${rows.map(([nm, per, note]) => `<tr${METHOD_NAME[method] === nm ? ' style="background:#1E1912"' : ''}><td>${nm}${METHOD_NAME[method] === nm ? '（目前）' : ''}</td><td>${note}</td><td class="num">${fmtN(per, 4)} 元</td>
+        <td class="num">${fmtN(per, 4)} × ${n} = ${fmtN(per * n, 4)} 元</td><td class="num">${fmtN(per * n, 4)} ÷ ${p.pn} = <b>${pct(per * n / p.pn)}</b></td></tr>`).join('')}
+      </tbody></table></div>`;
+  }
+  // 三、組合
+  const r = forecastPlan(plan, method, DB);
+  $('exPlan').innerHTML = r.k ? `<div class="formula">算法：${METHOD_NAME[method]}；每月 ${fmt0(r.amount)} 元 × ${r.k} 個月 = ${fmt0(r.total)} 元
+${r.groups.map(g => `${g.code}：${g.n} 個月 × ${fmt0(r.amount)} = ${fmt0(g.invest)} 元｜年化報酬 ${pct(g.x, true)}｜殖利率 ${pct(g.y)}`).join('\n')}
+M = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.x * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.M, true)}</em>
+N = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.y * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.N)}</em></div>`
+    : '<p class="note">上方年度配置還沒有設定月份。</p>';
+  // 四、退休
+  if (r.k && r.N > 0 && goal.x > 0) {
+    const res = retirePlan({ X: goal.x, Z: goal.z, M: r.M, N: r.N, A: plan.amount, i: goal.inf / 100, include: includeA, today: TODAY });
+    const rm = Math.pow(1 + r.M, 1 / 12) - 1;
+    $('exRetire').innerHTML = `<div class="formula">Y = ${fmt0(goal.x)} × 12 ÷ ${(r.N * 100).toFixed(2)}% = <em>${fmt0(res.Y0)}</em> 元
+月利率 = (1 + ${(r.M * 100).toFixed(2)}%)^(1/12) − 1 = ${(rm * 100).toFixed(4)}%
+起點 Z = ${fmt0(goal.z)} 元；每月投入 ${includeA ? fmt0(plan.amount) + ' 元' : '不納入'}；通膨 ${goal.inf}%
+結果：${res.status === 'ok' ? `${fmtDate(res.date)}（約 ${res.R.toFixed(2)} 年）` : res.status === 'done' ? '現在就可以退休' : esc(res.msg || '')}</div>`;
+  } else $('exRetire').innerHTML = '<p class="note">設定年度配置與每月現金流目標後顯示範例。</p>';
+}
+$('exCode').addEventListener('change', renderDemoEx);
+
 /* ===== 月份設定（只選 ETF）===== */
 let editM = null, draftCode = null;
 function openSheet(m) {
@@ -597,6 +704,7 @@ function initInputs() {
 }
 if (DEMO) {
   $('demoBar').hidden = false;
+  $('demoEx').hidden = false;
   $('methodSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
     method = b.dataset.m;
     $('methodSeg').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
