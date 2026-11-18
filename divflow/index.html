@@ -130,13 +130,13 @@ body{min-height:100vh;display:flex;justify-content:center}
       <h3>預估方法說明</h3>
       <p class="sub">每一檔先估「未來一年每股可領多少」，再依一年配息次數平均分到各期、乘上持有股數。<span id="howCur"></span></p>
       <div class="mt" data-m="cons">
-        <div class="h">保守預估<span class="tag">ETF 預設</span><span class="tag cur" hidden>目前使用</span></div>
+        <div class="h">保守預估<span class="tag">預設</span><span class="tag cur" hidden>目前使用</span></div>
         <p>看最近的配息水準，但不超過近一年實際配過的金額。</p>
         <span class="f">一年預估 ＝ 取較低者：<br>① 最近 3 次配息殖利率（配息 ÷ 除息前股價）的中位數 × 一年配息次數 × 最新收盤價<br>② 近一年實際配息合計</span>
-        <p>只用於 ETF；個股沒有這個方法，改用「歷年配息平均」。依證交所、櫃買中心官方除息資料計算。</p>
+        <p>ETF 與個股都適用；個股的配股、分割、減資會先換算成現在的每股。依證交所、櫃買中心官方除權息資料計算；少數無法確認配息金額的個股改用「歷年配息平均」。</p>
       </div>
       <div class="mt" data-m="amt">
-        <div class="h">歷年配息平均<span class="tag">個股預設</span><span class="tag cur" hidden>目前使用</span></div>
+        <div class="h">歷年配息平均<span class="tag cur" hidden>目前使用</span></div>
         <p>用每年每股配息合計，取全部歷史年份的平均。</p>
         <span class="f">一年預估 ＝ 從第一次配息那年到去年，每年每股配息合計的平均</span>
       </div>
@@ -238,7 +238,7 @@ let holdings = (() => {
 })();
 const DEMO = QS.get('demo') === '1';     // ?demo=1：顯示「預估算法」切換、PR 用示意分布
 /* 預估算法（2026-11-18 定案：預設 cons）
-   cons＝保守預估：ETF 用 min(最近 3 期單期殖利率中位數×次數×最新收盤, 近一年實配)÷次數（官方資料、同步程式算好）；個股沒有 cons，改用 amt
+   cons＝保守預估：min(最近 3 期單期殖利率中位數×次數×最新收盤, 近一年實配)÷次數（官方資料、同步程式算好；ETF 11/18 起、個股 11/18 起）；沒有 cons 的改用 amt
    amt＝歷年每股配息平均÷一年次數；yld＝歷年平均殖利率×最新收盤÷一年次數；amt10＝近 10 年每股配息平均÷一年次數 */
 let METHOD = /^(cons|amt|yld|amt10)$/.test(QS.get('est') || '') ? QS.get('est') : (DEMO ? store.get(KEY_M, 'cons') : 'cons');
 const EST = {};                          // 代號 → {n, amt, yld, years, amt10, cons}（同步程式事先算好）
@@ -355,11 +355,11 @@ function render() {
   }
   $('how').hidden = !DEMO;                                      // 預估方法說明只在 ?demo=1 顯示（使用者 11/18 決定）
   document.querySelectorAll('#how .mt').forEach(el => {          // 預估方法說明：標出目前使用的方法（ETF 用 cons 時個股實際用 amt）
-    const on = el.dataset.m === METHOD || (METHOD === 'cons' && el.dataset.m === 'amt');
+    const on = el.dataset.m === METHOD;
     el.classList.toggle('on', on);
     el.querySelector('.tag.cur').hidden = !on;
   });
-  $('howCur').textContent = METHOD === 'cons' ? '目前：ETF 用保守預估、個股用歷年配息平均。' : `目前：全部用「${{ amt: '歷年配息平均', amt10: '近 10 年平均', yld: '歷年殖利率平均' }[METHOD]}」（ETF 與個股相同）。`;
+  $('howCur').textContent = `目前：${{ cons: '保守預估', amt: '歷年配息平均', amt10: '近 10 年平均', yld: '歷年殖利率平均' }[METHOD]}（ETF 與個股相同）。`;
   $('note').innerHTML = `<b>說明</b>：本頁金額皆為預估值，依目前庫存股數與各股配息紀錄推算未來一年可領的現金股利，依預計發放月份排入 1～12 月，僅供參考，實際以公司公告為準。配股不計。${PRDIST ? '<br><b>PR 值</b>：以預估未來一年股息，和其他用戶比較的排名' + (PRDIST.demo ? '（目前為示意資料）' : `（${fmt(PRDIST.n)} 位用戶，${PRDIST.date || ''}）`) + '。' : ''}
   <br><b>實際入帳會再少一些</b>：畫面金額為股利總額，未扣除以下費用。①二代健保補充保費：單筆股利達 NT$${fmt(NHI_MIN)} 元，由發放單位直接扣 ${(NHI_RATE * 100).toFixed(2)}%（例：單筆 3 萬元扣 ${fmt(30000 * NHI_RATE)} 元；單筆上限 1,000 萬元；年度結算新制已暫緩，若有變動以健保署公告為準）。ETF 只有收益分配中的股利所得部分要扣。②匯費：每筆約 10 元，依各公司規定。③股利所得稅：隔年 5 月報稅時，可選「合併計稅」（股利 8.5% 可抵減稅額，每戶上限 8 萬元）或「分開計稅」（28% 單一稅率），依個人稅率而定，入帳時不會先扣。
   <br>資料：雪鴞 API，資料日 ${DATA.updated ? ymd(DATA.updated) : '—'}。依歷史資料試算，不代表未來配息，不構成投資建議。${SIM ? `<br>目前為模擬模式：站在 ${SIM} 看畫面。` : ''}`;
