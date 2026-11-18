@@ -34,6 +34,8 @@ body{min-height:100vh;display:flex;justify-content:center}
 .hold .t b{color:var(--ink);font-size:15px}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
 .chips::-webkit-scrollbar{display:none}
+.chip.na{border-color:#8a6a2a;color:#ffd27a}
+.miss{color:#ffd27a;font-size:12px}
 .chip{flex:none;font-size:12px;padding:5px 9px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);white-space:nowrap}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}
 .kpi .l{font-size:12px;color:var(--muted)}
@@ -172,7 +174,7 @@ body{min-height:100vh;display:flex;justify-content:center}
         <div class="h">保守預估<span class="tag">預設</span><span class="tag cur" hidden>目前使用</span></div>
         <p>同 ETF：最近 3 次現金股利殖利率推估值，與近一年實際配的現金股利，取較低者。</p>
         <span class="f">一年預估 ＝ 取較低者：<br>① 最近 3 次「現金股利 ÷ 除權息前收盤價」的中位數 × 一年配息次數 × 最新收盤價<br>② 近一年實際現金股利合計</span>
-        <p>個股會配股、分割（面額變更）、減資，股數會變，所以過去的現金股利都先換算成現在的每股再比較。同一天配股又配息時，官方只公布合計，現金股利另由雪鴞資料補上；近一年有無法確認金額的個股，改用「歷年配息平均」。</p>
+        <p>個股會配股、分割（面額變更）、減資，股數會變，所以過去的現金股利都先換算成現在的每股再比較。同一天配股又配息時，官方只公布合計，現金股利另由雪鴞資料補上；近一年有無法確認金額的個股，算不出保守預估，就不預估、不計入（畫面標示「無法預估」）。</p>
       </div>
       <div class="mt" data-m="amt">
         <div class="h">歷年配息平均<span class="tag cur" hidden>目前使用</span></div>
@@ -332,7 +334,7 @@ const DEMO = QS.get('demo') === '1';     // ?demo=1：顯示「預估算法」�
 /* 預估算法（2026-11-18 定案：預設 cons）
    cons＝保守預估：min(最近 3 期單期殖利率中位數×次數×最新收盤, 近一年實配)÷次數（官方資料、同步程式算好；ETF 11/18 起、個股 11/18 起）；沒有 cons 的改用 amt
    amt＝歷年每股配息平均÷一年次數；yld＝歷年平均殖利率×最新收盤÷一年次數；amt10＝近 10 年每股配息平均÷一年次數 */
-let METHOD = /^(cons|amt|yld|amt10)$/.test(QS.get('est') || '') ? QS.get('est') : (DEMO ? store.get(KEY_M, 'cons') : 'cons');
+let METHOD = !DEMO ? 'cons' : /^(cons|amt|yld|amt10)$/.test(QS.get('est') || '') ? QS.get('est') : store.get(KEY_M, 'cons');   // 正式版一律保守預估（11/18 使用者決定）；?est= 只在 DEMO 有效
 const EST = {};                          // 代號 → {n, amt, yld, years, amt10, cons}（同步程式事先算好）
 let PRDIST = null;
 const actualByCode = {};                // 今年＋去年的正式配息（含已公告未發放）
@@ -353,11 +355,14 @@ function syncURL() {   // 網址列跟著目前庫存，方便加入書籤
 
 /* ===== 預估（本頁全部是預估值，不使用已公告資料）=====
    時間：以最近 n 次「已除息」的配息（n＝一年配息次數）當範本，發放日（本身或往後平移 12 的倍數個月）落在本月起 12 個月內的就排入
-   金額：每期＝同步程式事先算好的值（預設 ETF 保守預估 cons、個股歷年平均 amt）；都沒有的，用近一年各期平均 */
+   金額：每期＝同步程式事先算好的值（預設 ETF 與個股都是保守預估 cons）。
+   保守預估算不出來（資料不足或無法確認金額）＝不預估、不計入，列在「無法預估」提示（11/18 使用者決定：不退回其他方法）。
+   DEMO 切換其他方法時，沒有該方法的值才用近一年各期平均 */
 function estimatesFor(code) {
   const hist = (actualByCode[code] || []).filter(e => e.cash > 0 && e.ex <= TODAY).sort((a, b) => a.ex < b.ex ? -1 : 1);
   if (!hist.length) return [];
   const E = EST[code];
+  if (METHOD === 'cons' && !(E && E.cons > 0)) return [];      // 保守預估＝0（預估不配）或算不出來（null）都不預估；後者另標「無法預估」
   const last365 = hist.filter(e => e.ex > addDays(TODAY, -365));
   const n = Math.max(1, Math.min(12, (E && E.n) || last365.length || 1));
   let per = E ? (METHOD === 'cons' && E.cons > 0 ? E.cons : METHOD === 'yld' && E.yld > 0 ? E.yld : METHOD === 'amt10' && E.amt10 > 0 ? E.amt10 : E.amt) : 0;
@@ -366,6 +371,13 @@ function estimatesFor(code) {
     per = b.reduce((t, e) => t + e.cash, 0) / b.length;
   }
   return hist.slice(-n).map(p => ({ code, ex: p.ex, pay: p.pay || weekday(addDays(p.ex, 30)), cash: per, estimate: true }));
+}
+/* 有配息紀錄、但保守預估算不出來的代號（不計入預估） */
+function noEst(code) {
+  if (METHOD !== 'cons') return false;
+  const hist = (actualByCode[code] || []).filter(e => e.cash > 0 && e.ex <= TODAY);
+  const E = EST[code];
+  return hist.length > 0 && !(E && E.cons != null && E.cons >= 0);   // cons＝0 是「預估不配」（例：400 天內沒除息的 ETF），不算無法預估
 }
 /* ---------- PR 值 ---------- */
 function normInv(q) {                     // 標準常態反函數（Acklam 近似），示意分布用
@@ -417,17 +429,18 @@ function compute() {
 }
 function render() {
   $('hcount').textContent = holdings.length;
-  $('chips').innerHTML = holdings.map(([c, s]) => `<span class="chip">${c} ${(DATA.sec[c] || [''])[0]}・${lots(s)}</span>`).join('');
+  $('chips').innerHTML = holdings.map(([c, s]) => `<span class="chip${noEst(c) ? ' na' : ''}">${c} ${(DATA.sec[c] || [''])[0]}・${lots(s)}${noEst(c) ? '・無法預估' : ''}</span>`).join('');
+  const miss = holdings.filter(([c]) => noEst(c)).map(([c]) => c);
   const months = compute();
   const paid = months.reduce((s, m) => s + m.paid, 0), pend = months.reduce((s, m) => s + m.pend, 0), est = months.reduce((s, m) => s + m.est, 0);
   const total = paid + pend + est, avg = total / 12;
-  postToApp({ type: 'summary', total: Math.round(total), monthly: Math.round(avg), method: METHOD });
+  postToApp({ type: 'summary', total: Math.round(total), monthly: Math.round(avg), method: METHOD, noEst: miss });
   const rangeTxt = '未來一年 1～12 月';
   $('kpis').innerHTML = `
     <div class="kpi big"><div class="l">預估一年可領股息</div><div class="v">NT$${fmt(total)}</div><div class="s">${rangeTxt}・依發放月份${SIM ? `・模擬 ${SIM}` : ''}</div></div>
     <div class="kpi"><div class="l">平均每月</div><div class="v">NT$${fmt(avg)}</div><div class="s">一年合計 ÷ 12</div></div>
     ${prKpi(total)}`;
-  $('range').textContent = `${rangeTxt}，每月為庫存合計的預估股息。`;
+  $('range').innerHTML = `${rangeTxt}，每月為庫存合計的預估股息。` + (miss.length ? `<br><span class="miss">⚠ ${miss.map(c => `${c} ${(DATA.sec[c] || [''])[0]}`).join('、')}：資料不足，無法預估，未計入金額。</span>` : '');
   const max = Math.max(1, ...months.map(m => m.paid + m.pend + m.est));
   $('demoBar').hidden = !DEMO;
   document.querySelectorAll('#mseg button').forEach(b => { b.classList.toggle('on', b.dataset.m === METHOD); b.onclick = () => { METHOD = b.dataset.m; store.set(KEY_M, METHOD); render(); }; });
@@ -459,7 +472,7 @@ function render() {
 }
 /* ---------- 庫存編輯 ---------- */
 let draft = [];
-function nameOf(c) { const s = DATA.sec[c]; return s ? `${s[0]}・${s[1]}${actualByCode[c] ? '' : '・近兩年無配息'}` : ''; }
+function nameOf(c) { const s = DATA.sec[c]; return s ? `${s[0]}・${s[1]}${actualByCode[c] ? (noEst(c) ? '・資料不足無法預估' : '') : '・近兩年無配息'}` : ''; }
 function openSheet() {
   if (!DATA) return;
   draft = holdings.map(h => [h[0], h[1]]);
