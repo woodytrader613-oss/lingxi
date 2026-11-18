@@ -88,6 +88,7 @@ a{color:var(--accent)}
 .pick span{font-size:11px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pick em{font-style:normal;font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
 .pick.bad{--c:var(--warn)}
+.pick .tiny{font-size:10px;color:var(--dim);white-space:normal}
 .addhint{display:flex;align-items:center;justify-content:center;flex:1;border-radius:6px;border:1px dashed var(--line2);color:var(--dim);font-size:12px}
 .btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .btn{flex:1;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
@@ -262,7 +263,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
     <p class="lead">每月用相同金額買進一檔 ETF（各月可以不同），用各檔的歷史資料估算這組配置長期一年的報酬率與殖利率，再推算股息要多久才能支應你設定的每月現金流。本頁全部是依歷史資料推估的數值，不使用投信已公告的配息。</p>
     <h3>長期配置的預估表現</h3>
     <div class="formula">每月配置金額 <em>A</em>；有設定的月份數 <em>k</em>；年度總投入 = A × k
-預估報酬率 <em>M</em> = Σ(各月投入 × 該月標的年化報酬率) ÷ 年度總投入
+預估報酬率 <em>M</em> = Σ(各月投入 × 該月標的年化報酬率) ÷ 有年化報酬率月份的投入合計
 預估殖利率 <em>N</em> = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
 （每月金額相同，等於有設定月份的平均；同一檔選幾個月就占幾份）</div>
     <div class="tbl-wrap"><table class="doc"><thead><tr><th>算法</th><th>年化報酬率</th><th>預估殖利率</th></tr></thead><tbody>
@@ -275,6 +276,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
       <li>還原股價已把配息加回去，所以預估報酬率已包含配息，與預估殖利率不能相加。</li>
       <li>年化報酬率用月底還原收盤價計算，算到最近一個已結束的月份；2010 年以前上市的 ETF，資料從 2010 年 1 月起算。</li>
       <li>每年配息以除息日的年份歸年，算到去年為止（今年還沒過完不算）；中間某年沒配息以 0 計。從未配息的 ETF，殖利率以 0% 計。</li>
+      <li>保守預估：年配息的 ETF 若今年還沒除息（上次除息在 400 天內），視為一年配 1 次，用上一次的配息計算；超過 400 天沒有配息，近一年實配為 0，殖利率就是 0%，仍可選入配置。</li>
     </ul>
     <h3>退休試算</h3>
     <div class="formula">需要的股票市值 <em>Y</em> = 每月現金流目標 <em>X</em> × 12 ÷ 預估殖利率 N
@@ -287,13 +289,16 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
       <li>月複利率 = (1 + M)^(1/12) − 1；先找到達成的月份，再於該月內依複利曲線推算到日。</li>
       <li>未計交易成本、稅金與二代健保補充保費；超過 100 年視為無法達成。</li>
     </ul>
+    <h3>特殊標的怎麼算</h3>
+    <ul>
+      <li><b>槓桿型與反向型</b>（代號 L、R 結尾，或名稱含「正2」「反1」等）：可以選。年化報酬率照實際還原股價計算；殖利率照保守預估定義計算，近一年沒有配息就是 0%。這類 ETF 每日追蹤倍數報酬，長期持有受波動耗損影響，歷史年化報酬不一定能重現。</li>
+      <li><b>上市未滿 1 年</b>：可以選。殖利率照保守預估計算（還沒第一次配息就是 0%）；資料期間太短、年化報酬率會被放大或縮小，所以不計入預估報酬率 M。</li>
+    </ul>
     <h3>不予計算的標的</h3>
     <p>下列 ETF 不提供預估，選單中反灰、不能選：</p>
     <ul>
-      <li><b>槓桿型與反向型</b>（代號 L、R 結尾，或名稱含「正2」「反1」等）：每日追蹤倍數報酬，長期報酬受波動耗損影響，歷史年化報酬不具參考性。</li>
-      <li><b>上市未滿 1 年</b>：資料期間太短，年化後的數字會被放大或縮小。</li>
-      <li><b>配息歷史不足</b>：去年以前沒有配息紀錄，無法計算歷年平均。</li>
       <li><b>缺少還原價資料</b>：資料庫尚未取得足夠資料。</li>
+      <li><b>配息歷史不足</b>（僅 DEMO 切換到歷年類算法時）：去年以前沒有配息紀錄，無法計算歷年平均。</li>
     </ul>
     <p id="excludeCount"></p>
     <h3>資料來源</h3>
@@ -317,7 +322,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 一年預估配息 = 每期預估配息 × 一年配息次數
 一年配息次數 = 最近 350 天的除息次數，對齊到 1、2、4、6、12 次</div>
       <div class="tbl-wrap"><table class="doc"><thead><tr><th>算法</th><th>一年預估配息怎麼來</th></tr></thead><tbody>
-        <tr><td><b>保守預估</b>（預設）</td><td>下面兩個取較低者：<br>⑤ 近期殖利率法＝最近 3 次除息「每股配息 ÷ 除息前收盤價」的中位數 × 一年配息次數 × 最新收盤價<br>④ 近一年實配＝最近 365 天實際除息的每股配息合計（未滿一年用平均每期 × 一年次數）<br>資料：證交所、櫃買中心官方除權息資料</td></tr>
+        <tr><td><b>保守預估</b>（預設）</td><td>下面兩個取較低者：<br>⑤ 近期殖利率法＝最近 3 次除息「每股配息 ÷ 除息前收盤價」的中位數 × 一年配息次數 × 最新收盤價<br>④ 近一年實配＝最近 365 天實際除息的每股配息合計（未滿一年用平均每期 × 一年次數）<br>年配息、今年還沒除息（上次在 400 天內）：一年 1 次、④ 用上一次配息；超過 400 天沒有配息：保守預估＝0，殖利率 0%<br>資料：證交所、櫃買中心官方除權息資料</td></tr>
         <tr><td><b>近 10 年平均</b></td><td>近 10 年（去年往回 10 年）每年配息合計的平均；資料不足 10 年用全部</td></tr>
         <tr><td><b>歷年配息平均</b></td><td>歷年（第一個完整配息年度～去年）每年配息合計的平均</td></tr>
         <tr><td><b>歷年殖利率平均</b></td><td>歷年「每年殖利率」的平均 × 最新收盤價；每年殖利率＝當年各次「每股配息 ÷ 除息前收盤價」加總</td></tr>
@@ -328,7 +333,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
       </ul>
       <div id="exYield"></div>
       <h3>三、組合的預估報酬率 M、預估殖利率 N（依目前的年度配置）</h3>
-      <div class="formula">M = Σ(各月投入 × 該月標的年化報酬率) ÷ 年度總投入
+      <div class="formula">M = Σ(各月投入 × 該月標的年化報酬率) ÷ 有年化報酬率月份的投入合計（上市未滿 1 年的月份不計）
 N = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
 每月金額相同，所以等於「有設定月份」的平均；同一檔選幾個月就占幾份</div>
       <div id="exPlan"></div>
@@ -389,46 +394,55 @@ function closeToApp() { if (!postToApp({ type: 'close' }) && history.length > 1)
 function hideLoader() { const l = document.getElementById('loader'); if (l) l.classList.add('done'); }
 
 /* ===== 計算核心（唯一計算標準）===== */
-const HARD_EXCLUDE = ['槓桿型或反向型', '上市未滿 1 年', '缺少還原價資料'];
+// 2026-11-18 使用者定案：槓桿型／反向型、上市未滿 1 年都可入選（能算的就算）
+//   槓桿／反向：報酬率照算、殖利率照保守預估定義（多為 0%）；未滿 1 年：殖利率照算、不計入預估報酬率 M
+const HARD_EXCLUDE = ['缺少還原價資料'];
 // 每檔在指定算法下的年化報酬率 x、預估殖利率 y；不能算回傳 { reason }
 function metricsOf(code, method, d) {
   const f = d.forecast[code];
   if (!f) return { reason: '查無此標的' };
   if (f.exclude && HARD_EXCLUDE.includes(f.exclude)) return { reason: f.exclude };
-  if (f.cagr == null) return { reason: '缺少還原價資料' };
-  const x = f.cagr, xFrom = f.cagrFrom;                 // 年化報酬率：三種算法都用上市至今（算到最近一個交易日）
+  const young = f.exclude === '上市未滿 1 年';
+  const lever = f.exclude === '槓桿型或反向型';
+  if (f.cagr == null && !young) return { reason: '缺少還原價資料' };
+  const x = young ? null : f.cagr, xFrom = f.cagrFrom;                 // 年化報酬率：三種算法都用上市至今（算到最近一個交易日）
   const e = (d.est || {})[code], pn = ((d.prices || {})[code] || {}).pn;
   let y;
-  if (e && pn > 0) {
-    const n = e[0], per = method === 'cons' ? (e[5] != null ? e[5] : e[4]) : method === 'm10' ? e[4] : method === 'amt' ? e[1] : e[2];   // 資料還沒有保守預估欄時先用近 10 年
-    if (per == null) return { reason: '配息歷史不足' };
+  if (!(pn > 0)) return { reason: '缺少收盤價資料' };
+  if (e) {
+    const n = e[0], per = method === 'cons' ? e[5] : method === 'm10' ? e[4] : method === 'amt' ? e[1] : e[2];
+    // 2026-11-18 使用者定案：保守預估一律用保守值，沒有就不提供（不再退回近 10 年）
+    if (per == null) return { reason: method === 'cons' ? '保守預估資料不足' : '配息歷史不足' };
     y = n * per / pn;
   } else if (f.noDiv) y = 0;
   else return { reason: '配息歷史不足' };
-  return { x, y, xFrom, xTo: f.cagrTo, years: e ? e[3] : 0, perYear: e ? e[0] : 0, noDiv: !e && !!f.noDiv };
+  return { x, y, xFrom, xTo: f.cagrTo, years: e ? e[3] : 0, perYear: e ? e[0] : 0, noDiv: !e && !!f.noDiv, young, lever };
 }
 // plan：{ amount, months: { 1..12: 代號 } }
 function forecastPlan(plan, method, d) {
   const A = plan.amount, rows = [], byCode = {}, skipped = [];
-  let total = 0, sumX = 0, sumY = 0;
+  let total = 0, totalX = 0, sumX = 0, sumY = 0;
+  const noX = [];
   for (let m = 1; m <= 12; m++) {
     const code = plan.months[m];
     if (!code) continue;
     const r = metricsOf(code, method, d);
     if (r.reason) { skipped.push({ m, code, reason: r.reason }); continue; }
-    total += A; sumX += A * r.x; sumY += A * r.y;
+    total += A; sumY += A * r.y;
+    if (r.x != null) { totalX += A; sumX += A * r.x; } else if (!noX.includes(code)) noX.push(code);
     rows.push({ m, code, ...r });
     if (!byCode[code]) byCode[code] = { code, n: 0, invest: 0, ...r, months: [] };
     byCode[code].n += 1; byCode[code].invest += A; byCode[code].months.push(m);
   }
-  return { amount: A, k: rows.length, total, M: total ? sumX / total : null, N: total ? sumY / total : null,
-    groups: Object.values(byCode), skipped };
+  return { amount: A, k: rows.length, total, totalX, M: totalX ? sumX / totalX : null, N: total ? sumY / total : null,
+    groups: Object.values(byCode), skipped, noX };
 }
 /* 退休試算：找出資產 V(t) 第一次 ≥ 需要市值 Y(t) 的日期
    V：Z 以 M 月複利，納入投入時每月底加 A；Y(t) = X × 12 × (1+i)^(t 年) ÷ N */
 function retirePlan(o) {
   const { X, Z, M, N, A, i, include, today } = o;
   if (!(X > 0)) return { status: 'input', msg: '請輸入每月現金流目標' };
+  if (M == null) return { status: 'na', msg: '配置中的 ETF 都上市未滿 1 年，沒有預估報酬率，無法推算' };
   if (!(N > 0)) return { status: 'na', msg: '這組配置的預估殖利率為 0%，無法靠股息達成目標' };
   const Y0 = X * 12 / N;
   const need = tm => Y0 * Math.pow(1 + i, tm / 12);
@@ -530,7 +544,7 @@ function render() {
     let body;
     if (!code) body = '<span class="addhint">＋ 選 ETF</span>';
     else if (mt.reason) body = `<div class="pick bad"><b>${esc(code)}</b><span>${esc(mt.reason)}</span><em>不列入計算</em></div>`;
-    else body = `<div class="pick" style="--c:${col[code]}"><b>${esc(code)}</b><span>${esc(NAMES[code] || '')}</span><em>$${fmt0(plan.amount)}</em></div>`;
+    else body = `<div class="pick" style="--c:${col[code]}"><b>${esc(code)}</b><span>${esc(NAMES[code] || '')}</span><em>$${fmt0(plan.amount)}</em>${mt.young ? '<span class="tiny">未滿 1 年・不計報酬率</span>' : ''}</div>`;
     return `<button type="button" class="card" data-m="${m}" aria-label="${m} 月${code ? '，' + code : '，尚未設定'}"><div class="mh"><b>${m} 月</b>${m === nowM ? '<span class="badge">本月</span>' : ''}</div>${body}</button>`;
   }).join('');
   $('grid').querySelectorAll('.card').forEach(c => c.onclick = () => openSheet(+c.dataset.m));
@@ -546,7 +560,7 @@ function render() {
         <div class="kpi"><span>預估殖利率</span><b>${pct(r.N)}</b><small>年化</small></div>
       </div>
       <div class="total"><span>年度總投入（${r.k} 個月 × $${fmt0(r.amount)}）</span><b>$${fmt0(r.total)}</b></div>
-${skipNote}
+${r.noX.length ? `<p class="note">${esc(r.noX.join('、'))} 上市未滿 1 年，不計入預估報酬率（只計入殖利率）。${r.M == null ? '目前沒有可計算報酬率的月份。' : ''}</p>` : ''}${skipNote}
       <p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。${DEMO ? `目前算法：${METHOD_NAME[method]}。` : ''}</p>`;
   }
   renderRetire(r);
@@ -585,6 +599,8 @@ function renderDemoEx() {
   const c = keep, f = FC[c], e = (DB.est || {})[c], p = (DB.prices || {})[c] || {};
   if (!c || !f) return;
   // 一、年化報酬率
+  if (f.cagr == null || !f.cagrFrom) { $('exCagr').innerHTML = `<p class="note">${esc(c)} 上市未滿 1 年，不計算年化報酬率（不計入預估報酬率 M）。</p>`; }
+  else {
   const start = new Date(+f.cagrFrom.slice(0, 4), +f.cagrFrom.slice(5, 7), 0);          // 起點月份的月底
   const end = f.cagrTo.length >= 10 ? new Date(+f.cagrTo.slice(0, 4), +f.cagrTo.slice(5, 7) - 1, +f.cagrTo.slice(8, 10))
     : new Date(+f.cagrTo.slice(0, 4), +f.cagrTo.slice(5, 7), 0);
@@ -595,30 +611,31 @@ function renderDemoEx() {
 年數 = ${Math.round((end - start) / 86400000).toLocaleString('en-US')} 天 ÷ 365.25 = ${fmtN(yrs, 2)} 年
 終點 ÷ 起點 = ${fmtN(mult, 4)} 倍（含配息）
 年化報酬率 = ${fmtN(mult, 4)}^(1 ÷ ${fmtN(yrs, 2)}) − 1 = <em>${pct(f.cagr, true)}</em></div>`;
+  }
   // 二、四種預估殖利率
   if (!e || !p.pn) {
     $('exYield').innerHTML = `<p class="note">${esc(c)} ${f.noDiv ? '從未配息，四種算法的殖利率都是 0%。' : '沒有歷年配息資料。'}</p>`;
   } else {
     const n = e[0], rows = [
-      ['保守預估', e[5] != null ? e[5] : e[4], e[5] != null ? '⑤、④ 取較低者' : '（尚無官方資料，暫用近 10 年）'],
+      ['保守預估', e[5], '⑤、④ 取較低者'],
       ['近 10 年平均', e[4], `近 ${Math.min(10, e[3])} 年平均`],
       ['歷年配息平均', e[1], `${e[3]} 年平均`],
       ['歷年殖利率平均', e[2], `歷年平均殖利率 ${pct(e[2] * n / p.pn)} × 收盤`]];
     $('exYield').innerHTML = `<p>範例：${esc(c)}，一年配息 ${n} 次（${FREQ[n] || ''}），最近交易日 ${String(p.pnDate || '').replace(/-/g, '/')} 收盤 ${p.pn} 元。</p>
       <div class="tbl-wrap"><table class="doc"><thead><tr><th>算法</th><th>說明</th><th>每期預估配息</th><th>一年預估配息</th><th>預估殖利率</th></tr></thead><tbody>
-      ${rows.map(([nm, per, note]) => `<tr${METHOD_NAME[method] === nm ? ' style="background:#1E1912"' : ''}><td>${nm}${METHOD_NAME[method] === nm ? '（目前）' : ''}</td><td>${note}</td><td class="num">${fmtN(per, 4)} 元</td>
+      ${rows.map(([nm, per, note]) => per == null ? `<tr><td>${nm}</td><td colspan="4">${nm === '保守預估' ? '保守預估資料不足（近 350 天沒有除息紀錄或官方資料缺），不提供' : '資料不足'}</td></tr>` : `<tr${METHOD_NAME[method] === nm ? ' style="background:#1E1912"' : ''}><td>${nm}${METHOD_NAME[method] === nm ? '（目前）' : ''}</td><td>${note}</td><td class="num">${fmtN(per, 4)} 元</td>
         <td class="num">${fmtN(per, 4)} × ${n} = ${fmtN(per * n, 4)} 元</td><td class="num">${fmtN(per * n, 4)} ÷ ${p.pn} = <b>${pct(per * n / p.pn)}</b></td></tr>`).join('')}
       </tbody></table></div>`;
   }
   // 三、組合
   const r = forecastPlan(plan, method, DB);
   $('exPlan').innerHTML = r.k ? `<div class="formula">算法：${METHOD_NAME[method]}；每月 ${fmt0(r.amount)} 元 × ${r.k} 個月 = ${fmt0(r.total)} 元
-${r.groups.map(g => `${g.code}：${g.n} 個月 × ${fmt0(r.amount)} = ${fmt0(g.invest)} 元｜年化報酬 ${pct(g.x, true)}｜殖利率 ${pct(g.y)}`).join('\n')}
-M = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.x * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.M, true)}</em>
+${r.groups.map(g => `${g.code}：${g.n} 個月 × ${fmt0(r.amount)} = ${fmt0(g.invest)} 元｜年化報酬 ${g.x == null ? '不計（未滿 1 年）' : pct(g.x, true)}｜殖利率 ${pct(g.y)}`).join('\n')}
+M = (${r.groups.filter(g => g.x != null).map(g => `${fmt0(g.invest)} × ${(g.x * 100).toFixed(2)}%`).join(' + ') || '—'}) ÷ ${fmt0(r.totalX)} = <em>${pct(r.M, true)}</em>${r.noX.length ? `（${r.noX.join('、')} 上市未滿 1 年，不計）` : ''}
 N = (${r.groups.map(g => `${fmt0(g.invest)} × ${(g.y * 100).toFixed(2)}%`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.N)}</em></div>`
     : '<p class="note">上方年度配置還沒有設定月份。</p>';
   // 四、退休
-  if (r.k && r.N > 0 && goal.x > 0) {
+  if (r.k && r.N > 0 && r.M != null && goal.x > 0) {
     const res = retirePlan({ X: goal.x, Z: goal.z, M: r.M, N: r.N, A: plan.amount, i: goal.inf / 100, include: includeA, today: TODAY });
     const rm = Math.pow(1 + r.M, 1 / 12) - 1;
     $('exRetire').innerHTML = `<div class="formula">Y = ${fmt0(goal.x)} × 12 ÷ ${(r.N * 100).toFixed(2)}% = <em>${fmt0(res.Y0)}</em> 元
@@ -726,7 +743,8 @@ function onData(d) {
   $('dataLabel').textContent = `資料至 ${String(d.base || '').replace(/-/g, '/')}`;
   const cnt = {}; let ok = 0;
   Object.keys(FC).forEach(c => { const r = metricsOf(c, 'cons', d); if (r.reason) cnt[r.reason] = (cnt[r.reason] || 0) + 1; else ok++; });
-  $('excludeCount').textContent = `目前資料庫共 ${Object.keys(FC).length} 檔 ETF，可預估 ${ok} 檔，不予計算 ${Object.keys(FC).length - ok} 檔（${Object.entries(cnt).map(([k, v]) => `${k} ${v} 檔`).join('、')}）。`;
+  const nYoung = Object.values(FC).filter(f => f.exclude === '上市未滿 1 年').length, nLev = Object.values(FC).filter(f => f.exclude === '槓桿型或反向型').length;
+  $('excludeCount').textContent = `目前資料庫共 ${Object.keys(FC).length} 檔 ETF，可選 ${ok} 檔（含槓桿型／反向型 ${nLev} 檔、上市未滿 1 年 ${nYoung} 檔），不予計算 ${Object.keys(FC).length - ok} 檔${Object.keys(cnt).length ? `（${Object.entries(cnt).map(([k, v]) => `${k} ${v} 檔`).join('、')}）` : ''}。`;
   render();
   hideLoader();
   postToApp({ type: 'ready', title: '領息大地圖', base: d.base });
