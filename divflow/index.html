@@ -108,7 +108,7 @@ body{min-height:100vh;display:flex;justify-content:center}
       <div class="ph">
         <div class="phh"><h2>預估12個月現金流</h2></div>
         <p id="range"></p>
-        <div class="demo" id="demoBar" hidden><span>預估算法（DEMO）</span><div class="seg" id="mseg"><button type="button" data-m="amt">歷年配息平均</button><button type="button" data-m="amt10">近10年平均</button><button type="button" data-m="yld">歷年殖利率平均</button></div></div>
+        <div class="demo" id="demoBar" hidden><span>預估算法（DEMO）</span><div class="seg" id="mseg"><button type="button" data-m="cons">保守預估</button><button type="button" data-m="amt">歷年配息平均</button><button type="button" data-m="amt10">近10年平均</button><button type="button" data-m="yld">歷年殖利率平均</button></div></div>
       </div>
       <div id="months"></div>
     </div>
@@ -145,7 +145,7 @@ const STOCK_URL = 'https://script.google.com/macros/s/AKfycbyLWNvrA-aBZscUEcS48o
 const ETF_URL = 'https://script.google.com/macros/s/AKfycbxj5wW6Ve2zNvp0SJS3zluGE_yd7WyNWP6HrPHGVwZDblQR0JSQPA9MPoZ9IDDvXd4F/exec';
 let DATA = null;
 const SAMPLE = [['0056', 10000], ['00878', 10000], ['00919', 10000], ['2330', 1000], ['2412', 3000], ['2884', 20000]];
-const KEY_H = 'divflow_holdings_v1', KEY_M = 'divflow_method_v1';
+const KEY_H = 'divflow_holdings_v1', KEY_M = 'divflow_method_v2';   // v2：預設改保守預估（舊的 DEMO 選擇不沿用）
 /* PR 分布表（APP 後端每天產出：{n:用戶數, p:[第1～99百分位的預估年領息], date}）。網址由 RD 提供後填入；空白＝不顯示 PR（?demo=1 時用示意分布） */
 const PR_URL = '';
 const PR_MIN_USERS = 100;
@@ -199,9 +199,11 @@ let holdings = (() => {
   return store.get(KEY_H, null) || SAMPLE.slice();
 })();
 const DEMO = QS.get('demo') === '1';     // ?demo=1：顯示「預估算法」切換、PR 用示意分布
-/* 預估算法：amt＝歷年每股配息平均÷一年次數（預設，保守）；yld＝歷年平均殖利率×最新收盤÷一年次數；amt10＝近 10 年每股配息平均÷一年次數 */
-let METHOD = /^(amt|yld|amt10)$/.test(QS.get('est') || '') ? QS.get('est') : (DEMO ? store.get(KEY_M, 'amt') : 'amt');
-const EST = {};                          // 代號 → {n, amt, yld, years, amt10}（同步程式事先算好）
+/* 預估算法（2026-11-18 定案：預設 cons）
+   cons＝保守預估：ETF 用 min(最近 3 期單期殖利率中位數×次數×最新收盤, 近一年實配)÷次數（官方資料、同步程式算好）；個股沒有 cons，改用 amt
+   amt＝歷年每股配息平均÷一年次數；yld＝歷年平均殖利率×最新收盤÷一年次數；amt10＝近 10 年每股配息平均÷一年次數 */
+let METHOD = /^(cons|amt|yld|amt10)$/.test(QS.get('est') || '') ? QS.get('est') : (DEMO ? store.get(KEY_M, 'cons') : 'cons');
+const EST = {};                          // 代號 → {n, amt, yld, years, amt10, cons}（同步程式事先算好）
 let PRDIST = null;
 const actualByCode = {};                // 今年＋去年的正式配息（含已公告未發放）
 
@@ -221,14 +223,14 @@ function syncURL() {   // 網址列跟著目前庫存，方便加入書籤
 
 /* ===== 預估（本頁全部是預估值，不使用已公告資料）=====
    時間：以最近 n 次「已除息」的配息（n＝一年配息次數）當範本，發放日（本身或往後平移 12 的倍數個月）落在本月起 12 個月內的就排入
-   金額：每期＝同步程式事先算好的歷史平均（金額法 amt／殖利率法 yld）；沒有歷史值的，用近一年各期平均 */
+   金額：每期＝同步程式事先算好的值（預設 ETF 保守預估 cons、個股歷年平均 amt）；都沒有的，用近一年各期平均 */
 function estimatesFor(code) {
   const hist = (actualByCode[code] || []).filter(e => e.cash > 0 && e.ex <= TODAY).sort((a, b) => a.ex < b.ex ? -1 : 1);
   if (!hist.length) return [];
   const E = EST[code];
   const last365 = hist.filter(e => e.ex > addDays(TODAY, -365));
   const n = Math.max(1, Math.min(12, (E && E.n) || last365.length || 1));
-  let per = E ? (METHOD === 'yld' && E.yld > 0 ? E.yld : METHOD === 'amt10' && E.amt10 > 0 ? E.amt10 : E.amt) : 0;
+  let per = E ? (METHOD === 'cons' && E.cons > 0 ? E.cons : METHOD === 'yld' && E.yld > 0 ? E.yld : METHOD === 'amt10' && E.amt10 > 0 ? E.amt10 : E.amt) : 0;
   if (!(per > 0)) {
     const b = last365.length ? last365 : hist.slice(-n);
     per = b.reduce((t, e) => t + e.cash, 0) / b.length;
@@ -421,7 +423,7 @@ function boot() {
     const stockEv = (v, label) => {
       const mk = mkOf(v);
       Object.entries(v.sec || {}).forEach(([c, nm]) => { if (!sec[c]) sec[c] = [nm, mk(c)]; });
-      Object.entries(v.est || {}).forEach(([c, e]) => { if (!EST[c] && e && e[0] > 0) EST[c] = { n: +e[0], amt: +e[1], yld: e[2] == null ? null : +e[2], years: +e[3], amt10: e[4] == null ? null : +e[4] }; });
+      Object.entries(v.est || {}).forEach(([c, e]) => { if (!EST[c] && e && e[0] > 0) EST[c] = { n: +e[0], amt: +e[1], yld: e[2] == null ? null : +e[2], years: +e[3], amt10: e[4] == null ? null : +e[4], cons: e[5] == null ? null : +e[5] }; });
       (v.ev || []).forEach(e => { addActual(e[0], { code: e[0], ex: e[1], pay: e[2] || '', cash: +e[3] || 0, est: !!e[5] }); n++; });
     };
     if (st.status === 'fulfilled' && st.value && st.value.ok) { stockEv(st.value); updated = st.value.updated || ''; }
@@ -430,7 +432,7 @@ function boot() {
     if (et.status === 'fulfilled' && et.value && et.value.etfs) {
       const d = et.value;
       d.etfs.forEach(x => { sec[x.code] = [x.name, 'ETF']; });
-      Object.entries(d.est || {}).forEach(([c, e]) => { if (e && e[0] > 0) EST[c] = { n: +e[0], amt: +e[1], yld: e[2] == null ? null : +e[2], years: +e[3], amt10: e[4] == null ? null : +e[4] }; });
+      Object.entries(d.est || {}).forEach(([c, e]) => { if (e && e[0] > 0) EST[c] = { n: +e[0], amt: +e[1], yld: e[2] == null ? null : +e[2], years: +e[3], amt10: e[4] == null ? null : +e[4], cons: e[5] == null ? null : +e[5] }; });
       [d.events, d.prevEvents].forEach(group => Object.entries(group || {}).forEach(([c, list]) => list.forEach(x => {
         if (x.ex) { addActual(c, { code: c, ex: x.ex, pay: x.pay || '', cash: +x.dps || 0, est: !!(x.estPay || x.estDps) }); n++; }
       })));
