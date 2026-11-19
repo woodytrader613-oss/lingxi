@@ -113,6 +113,17 @@ a{color:var(--accent)}
 .cmp td.big{font-size:15px;font-weight:700;color:var(--accent)}
 .cmp td small{display:block;color:var(--ink2);font-size:11px;font-weight:400}
 .cmpsum{margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--panel2);font-size:13px;line-height:1.7;color:var(--ink)}
+.wlist{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.wrow{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.wrow .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.wrow .wn{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.wrow .wn b{font-size:14px}
+.wrow .wn span{font-size:12px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wrow .wn small{font-size:11px;color:var(--dim)}
+.wrow .inbox input{width:64px;text-align:right}
+.wdel{width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:14px;cursor:pointer}
+.wsum{display:flex;justify-content:space-between;padding:2px 4px;font-size:13px;color:var(--muted)}
+.wsum b{color:var(--ink)}
 .addhint{display:flex;align-items:center;justify-content:center;flex:1;border-radius:6px;border:1px dashed var(--line2);color:var(--dim);font-size:12px}
 .btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .btn{flex:1;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
@@ -251,7 +262,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
           <section id="cardsPanel" class="panel">
             <div class="sec-title"><h2><i class="step">2</i><span id="ttl2">方案一：年度配置</span></h2><span class="tag you" id="tag2">你自己設定</span></div>
             <div class="grid" id="grid"></div>
-            <p class="note">點月份卡片，選這個月要買的 ETF（每月一檔）。同一檔選幾個月，就占幾份比重。</p>
+            <p class="note" id="gridNote">點月份卡片，選這個月要買的 ETF（每月一檔）。同一檔選幾個月，就占幾份比重。</p>
             <div id="result"><div class="empty">資料載入中…</div></div>
             <div class="btnrow">
               <button type="button" class="btn ghost" id="btnClear">全部清除</button>
@@ -413,8 +424,14 @@ N = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
 const QS = new URLSearchParams(location.search);
 const EMBED_MODE = QS.get('embed') === '1';
 const DEMO = QS.get('demo') === '1';
-const D2 = QS.has('demo2');
-function demo2Titles() { if (!D2) return; $('ttl2').textContent = '年度配置'; $('tag2').textContent = '用戶隨意配置'; $('ttl3').textContent = '建議實踐'; $('tag3').textContent = '建議的正式執行計畫'; }   // DEMO2：建議實踐不排除任何 ETF，版面只列一組預估與彙整
+const D3 = QS.has('demo3');   // DEMO3：DEMO2 ＋ 年度配置改占比（%）、退休條件用詞調整
+const D2 = QS.has('demo2') || D3;
+function demo3Labels() {
+  document.querySelector('label[for=goalX]').innerHTML = `每月現金流目標<small>${goal.inf > 0 ? '以今天的物價計，退休時會依通膨調高' : '不考慮通膨'}</small>`;
+  document.querySelector('label[for=stockZ]').innerHTML = '目前可投入的資產<small>股票市值加現金，假設全部換成上面的配置</small>';
+  $('gridNote').textContent = '選要配置的 ETF，填上各自的占比（%）。';
+}
+function demo2Titles() { if (!D2) return; if (D3) demo3Labels(); $('ttl2').textContent = '年度配置'; $('tag2').textContent = '用戶隨意配置'; $('ttl3').textContent = '建議實踐'; $('tag3').textContent = '建議的正式執行計畫'; }   // DEMO2：建議實踐不排除任何 ETF，版面只列一組預估與彙整
 if (EMBED_MODE) {
   document.documentElement.classList.add('embed');
   if (QS.get('header') === '1') document.documentElement.classList.add('embed-header');
@@ -457,10 +474,35 @@ function metricsOf(code, method, d) {
   return { x, y, xFrom, xTo: f.cagrTo, years: e ? e[3] : 0, perYear: e ? e[0] : 0, noDiv: !e && !!f.noDiv, young, lever };
 }
 // plan：{ amount, months: { 1..12: 代號 } }
+/* DEMO3：配置以「代號 → 占比%」記錄；全年預算＝每月配置金額 × 12，依占比分到各檔 */
+function planWeights() {
+  const codes = Object.keys(plan.w || {}).filter(c => plan.w[c] > 0);
+  const raw = codes.reduce((t, c) => t + plan.w[c], 0), w = {};
+  codes.forEach(c => { w[c] = plan.w[c] / raw; });
+  return { codes, w, raw };
+}
+function monthsToWeights(months) {
+  const cnt = {}; let K = 0;
+  for (let m = 1; m <= 12; m++) { const c = months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
+  const w = {}; Object.keys(cnt).forEach(c => { w[c] = cnt[c] / K * 100; });
+  return w;
+}
+function fmtPct1(x) { return String(Math.round(x * 10) / 10); }
 function forecastPlan(plan, method, d) {
   const A = plan.amount, rows = [], byCode = {}, skipped = [];
   let total = 0, totalX = 0, sumX = 0, sumY = 0;
   const noX = [];
+  if (D3) {
+    const W = planWeights();
+    W.codes.forEach(code => {
+      const r = metricsOf(code, method, d), inv = 12 * A * W.w[code];
+      if (r.reason) { skipped.push({ m: 0, code, reason: r.reason }); return; }
+      total += inv; sumY += inv * r.y;
+      if (r.x != null) { totalX += inv; sumX += inv * r.x; } else noX.push(code);
+      rows.push({ code, ...r }); byCode[code] = { code, n: 0, invest: inv, ...r, months: [] };
+    });
+    return { amount: A, k: rows.length, total, totalX, M: totalX ? sumX / totalX : null, N: total ? sumY / total : null, groups: Object.values(byCode), skipped, noX };
+  }
   for (let m = 1; m <= 12; m++) {
     const code = plan.months[m];
     if (!code) continue;
@@ -519,7 +561,7 @@ const QUICK = ['0056', '00878', '00919', '0050', '006208', '00713', '00929', '00
 const STORE_KEY = 'lingxi_plan_v3';
 const METHOD_NAME = { cons: '保守預估', m10: '近 10 年平均', amt: '歷年配息平均', yld: '歷年殖利率平均' };
 let DB = null, FC = {}, NAMES = {};
-let plan = { amount: 10000, months: {} }, goal = { x: 30000, z: 1000000, inf: 0 }, method = 'cons', includeA = true;   // 2026-11-18 預設改保守預估
+let plan = { amount: 10000, months: {}, w: {} }, goal = { x: 30000, z: 1000000, inf: 0 }, method = 'cons', includeA = true;   // 2026-11-18 預設改保守預估
 const $ = id => document.getElementById(id);
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2400); }
@@ -548,11 +590,37 @@ function decodePlan(s) {
   return out;
 }
 function save() {
+  if (D3) {
+    try { localStorage.setItem('lingxi_plan_v3d3', JSON.stringify({ plan: { amount: plan.amount, w: plan.w }, goal })); } catch (e) {}
+    postToApp({ type: 'plan', plan: String(Math.round(plan.amount)), weights: plan.w, x: goal.x, z: goal.z, inf: goal.inf });
+    return;
+  }
   try { localStorage.setItem(STORE_KEY, JSON.stringify({ plan, goal })); } catch (e) {}
   postToApp({ type: 'plan', plan: encodePlan(plan), x: goal.x, z: goal.z, inf: goal.inf });
 }
 function load() {
   let src = '';
+  if (D3) {
+    try {
+      const s3 = JSON.parse(localStorage.getItem('lingxi_plan_v3d3') || 'null');
+      if (s3 && s3.plan && s3.plan.w) { plan.amount = +s3.plan.amount || 10000; plan.w = s3.plan.w; src = 'store'; }
+      if (s3 && s3.goal) goal = { ...goal, ...s3.goal };
+      if (!src) {   // 沒有 DEMO3 的紀錄：把舊版「月份配置」換算成占比
+        const s0 = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+        if (s0 && s0.plan && s0.plan.months) { plan.amount = +s0.plan.amount || 10000; plan.w = monthsToWeights(s0.plan.months); src = 'store'; }
+        if (s0 && s0.goal) goal = { ...goal, ...s0.goal };
+      }
+    } catch (e) {}
+    const wq = QS.get('w'), fu = decodePlan(QS.get('plan'));
+    if (wq) {   // ?w=0056:30,00878:25
+      const w = {}; wq.split(',').forEach(x => { const t = x.match(/^([0-9A-Za-z]+):([\d.]+)$/); if (t) w[t[1].toUpperCase()] = +t[2]; });
+      plan.w = w; if (fu) plan.amount = fu.amount; src = 'url';
+    } else if (fu) { plan.amount = fu.amount; plan.w = monthsToWeights(fu.months); src = 'url'; }
+    if (QS.has('x')) goal.x = num(QS.get('x'));
+    if (QS.has('z')) goal.z = num(QS.get('z'));
+    if (QS.has('inf')) goal.inf = num(QS.get('inf'));
+    return src;
+  }
   try {
     let s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (!s) { const o = JSON.parse(localStorage.getItem('lingxi_plan_v2') || 'null'); if (o) s = { plan: o }; }
@@ -569,13 +637,53 @@ function load() {
 
 function colorMap() {
   const map = {}; let i = 0;
+  if (D3) { Object.keys(plan.w || {}).forEach(c => { map[c] = PALETTE[i++ % PALETTE.length]; }); return map; }
   for (let m = 1; m <= 12; m++) { const c = plan.months[m]; if (c && !(c in map)) map[c] = PALETTE[i++ % PALETTE.length]; }
   return map;
 }
-function render() {
+function renderWeights(col) {
+  col = col || colorMap();
+  const codes = Object.keys(plan.w || {});
+  const rows = codes.map(c => `<div class="wrow" data-c="${esc(c)}"><i class="dot" style="background:${col[c]}"></i>
+      <div class="wn"><b>${esc(c)}</b><span>${esc(NAMES[c] || '')}</span><small class="wamt"></small></div>
+      <span class="inbox"><input class="wpct" data-c="${esc(c)}" inputmode="decimal" autocomplete="off" value="${fmtPct1(plan.w[c])}" aria-label="${esc(c)} 占比"> %</span>
+      <button type="button" class="wdel" data-c="${esc(c)}" aria-label="移除 ${esc(c)}">✕</button></div>`).join('');
+  $('grid').className = 'wlist';
+  $('grid').innerHTML = (rows || '<div class="addhint" style="min-height:64px">還沒有配置，按下方「新增 ETF」開始</div>')
+    + (codes.length ? '<div class="wsum" id="wsum"></div>' : '')
+    + '<div class="btnrow"><button type="button" class="btn primary" id="wAdd">＋ 新增 ETF</button>' + (codes.length > 1 ? '<button type="button" class="btn ghost" id="wEven">平均分配</button>' : '') + '</div>';
+  $('grid').querySelectorAll('.wpct').forEach(el => el.addEventListener('input', () => {
+    plan.w[el.dataset.c] = Math.min(100, num(el.value)); save(); render(true);
+  }));
+  $('grid').querySelectorAll('.wpct').forEach(el => el.addEventListener('blur', () => { el.value = fmtPct1(plan.w[el.dataset.c] || 0); }));
+  $('grid').querySelectorAll('.wdel').forEach(b => b.onclick = () => {
+    delete plan.w[b.dataset.c];
+    const cs = Object.keys(plan.w), sum = cs.reduce((t, c) => t + (plan.w[c] || 0), 0);
+    if (sum > 0) cs.forEach(c => { plan.w[c] = Math.round(plan.w[c] / sum * 10000) / 100; });   // 移除一檔後，其餘按比例補到 100%
+    save(); render();
+  });
+  $('wAdd').onclick = () => openSheet('add');
+  if ($('wEven')) $('wEven').onclick = () => { const cs = Object.keys(plan.w); cs.forEach(c => { plan.w[c] = Math.round(10000 / cs.length) / 100; }); save(); render(); };
+  updateWeights();
+}
+function updateWeights() {
+  const codes = Object.keys(plan.w || {}), sum = codes.reduce((t, c) => t + (plan.w[c] || 0), 0);
+  $('grid').querySelectorAll('.wrow').forEach(row => {
+    const c = row.dataset.c, a = plan.amount * 12 * (plan.w[c] || 0) / (sum || 1) / 12;
+    row.querySelector('.wamt').textContent = sum > 0 ? `平均每月 $${fmt0(a)}` : '';
+  });
+  const el = $('wsum');
+  if (el) {
+    const ok = Math.abs(sum - 100) < 0.05;
+    el.innerHTML = ok ? `合計 <b>100%</b>` : `合計 <b style="color:var(--warn)">${fmtPct1(sum)}%</b>（不是 100%，會依比例換算）`;
+  }
+}
+function render(keepList) {
   const r = forecastPlan(plan, method, DB);
   const col = colorMap();
   const nowM = TODAY.getMonth() + 1;
+  if (D3) { if (keepList) updateWeights(); else renderWeights(col); }
+  else {
   $('grid').innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
     const code = plan.months[m];
     const mt = code ? metricsOf(code, method, DB) : null;
@@ -586,6 +694,7 @@ function render() {
     return `<button type="button" class="card" data-m="${m}" aria-label="${m} 月${code ? '，' + code : '，尚未設定'}"><div class="mh"><b>${m} 月</b>${m === nowM ? '<span class="badge">本月</span>' : ''}</div>${body}</button>`;
   }).join('');
   $('grid').querySelectorAll('.card').forEach(c => c.onclick = () => openSheet(+c.dataset.m));
+  }
 
   const skipNote = r.skipped.length ? `<p class="warnline">有 ${r.skipped.length} 個月份的標的不列入計算（${esc([...new Set(r.skipped.map(s => s.code + ' ' + s.reason))].join('、'))}），年度總投入只算有效月份。</p>` : '';
   if (!r.k) {
@@ -618,7 +727,8 @@ function exMonthsOf(code) {
 let SUG = null;
 function suggestPlan(pl, method, d) {
   const A = pl.amount, cnt = {}; let K = 0;
-  for (let m = 1; m <= 12; m++) { const c = pl.months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
+  if (D3) { const W = planWeights(); W.codes.forEach(c => { cnt[c] = W.w[c]; }); K = 12; }
+  else for (let m = 1; m <= 12; m++) { const c = pl.months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
   const inc = [], dropped = [];
   Object.keys(cnt).forEach(c => {
     const mt = metricsOf(c, method, d), exm = exMonthsOf(c);
@@ -649,12 +759,12 @@ function renderSuggest() {
   }).join('');
   if (!SUG.k) {
     $('sugResult').innerHTML = '';
-    $('sugNote').textContent = Object.keys(plan.months).some(m => plan.months[m]) ? '年度配置中沒有可以領息的標的，這裡無法產生建議實踐。' : '先在上方設定年度配置，這裡就會產生建議實踐的月份。';
+    $('sugNote').textContent = (D3 ? planWeights().codes.length : Object.keys(plan.months).some(m => plan.months[m])) ? '年度配置中沒有可以領息的標的，這裡無法產生建議實踐。' : '先在上方設定年度配置，這裡就會產生建議實踐的月份。';
     return;
   }
   $('sugResult').innerHTML = `<div class="kpis" style="margin-top:10px">
       <div class="kpi"><span>預估報酬率</span><b style="color:var(--accent)">${pct(SUG.M, true)}</b><small>年化，已含配息</small></div>
-      <div class="kpi"><span>預估殖利率</span><b>${pct(SUG.N)}</b><small>年化</small></div></div>${D2 ? '<p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。</p>' : ''}`;
+      <div class="kpi"><span>預估殖利率</span><b>${pct(SUG.N)}</b><small>年化</small></div></div>`;
   setSugNote();
 }
 function setSugNote() {
@@ -685,10 +795,10 @@ function renderRetire(r) {
       : x.status === 'done' ? '現在就可以退休' : `<small>${esc(x.msg || '')}</small>`;
     box.innerHTML = `<table class="cmp"><tbody>
       <tr><td>年度總投入</td><td>${sg.k ? '$' + fmt0(sg.total) : '—'}</td></tr>
-      <tr><td>需要的股票市值 Y</td><td>${x.Y0 ? '$' + fmt0(x.Y0) : '—'}</td></tr>
-      ${goal.inf > 0 ? `<tr><td>退休時需要市值</td><td>${x.Yt ? '$' + fmt0(x.Yt) : '—'}</td></tr>` : ''}
-      <tr><td>可以退休的推估日期</td><td class="big">${when}</td></tr></tbody></table>
-      <p class="note">每月持續投入：${includeA ? '$' + fmt0(plan.amount) : '不納入'}。</p>`;
+      <tr><td>${D3 ? '需要的資產規模 Y' : '需要的股票市值 Y'}</td><td>${x.Y0 ? '$' + fmt0(x.Y0) : '—'}</td></tr>
+      ${goal.inf > 0 ? `<tr><td>${D3 ? '退休時需要的資產規模' : '退休時需要市值'}</td><td>${x.Yt ? '$' + fmt0(x.Yt) : '—'}</td></tr>` : ''}
+      ${D3 && goal.inf > 0 && x.status === 'ok' ? `<tr><td>退休時每月需要</td><td>$${fmt0(goal.x * Math.pow(1 + goal.inf / 100, x.R))}<small>今天的 $${fmt0(goal.x)}</small></td></tr>` : ''}
+      <tr><td>可以退休的推估日期</td><td class="big">${when}</td></tr></tbody></table>`;
     return;
   }
   const a = retireRes(r.M, r.N, r.k), b = retireRes(sg.M, sg.N, sg.k);
@@ -713,7 +823,8 @@ function renderRetire(r) {
 /* ===== DEMO：計算方式與範例 ===== */
 function exCodes() {
   const list = [];
-  for (let m = 1; m <= 12; m++) { const c = plan.months[m]; if (c && !list.includes(c) && !metricsOf(c, method, DB).reason) list.push(c); }
+  if (D3) planWeights().codes.forEach(c => { if (!metricsOf(c, method, DB).reason) list.push(c); });
+  else for (let m = 1; m <= 12; m++) { const c = plan.months[m]; if (c && !list.includes(c) && !metricsOf(c, method, DB).reason) list.push(c); }
   QUICK.forEach(c => { if (!list.includes(c) && FC[c] && !metricsOf(c, method, DB).reason) list.push(c); });
   return list;
 }
@@ -777,6 +888,11 @@ $('exCode').addEventListener('change', renderDemoEx);
 /* ===== 月份設定（只選 ETF）===== */
 let editM = null, draftCode = null;
 function openSheet(m) {
+  if (D3) {
+    editM = 'add'; draftCode = null;
+    $('sheetTitle').textContent = '新增 ETF'; $('search').value = ''; $('fillWrap').hidden = true; $('sheetClear').hidden = true; $('sheetOk').textContent = '加入';
+    renderPicker(); $('sheetBg').classList.add('show'); $('sheetBg').setAttribute('aria-hidden', 'false'); return;
+  }
   editM = m; draftCode = plan.months[m] || null;
   $('sheetTitle').textContent = `${m} 月要買的 ETF`;
   $('search').value = '';
@@ -819,6 +935,18 @@ function choose(code) {
   draftCode = code; $('search').value = ''; renderPicker();
 }
 $('sheetOk').onclick = () => {
+  if (D3) {
+    if (!draftCode) { closeSheet(); return; }
+    if (draftCode in plan.w) { toast(`${draftCode} 已在配置中`); return; }
+    const cs = Object.keys(plan.w), n = cs.length;
+    if (!n) plan.w[draftCode] = 100;
+    else {   // 新增一檔：平均占比，原有各檔按比例縮小
+      const sum = cs.reduce((t, c) => t + plan.w[c], 0) || 100, share = Math.round(10000 / (n + 1)) / 100;
+      cs.forEach(c => { plan.w[c] = Math.round(plan.w[c] / sum * (100 - share) * 100) / 100; });
+      plan.w[draftCode] = share;
+    }
+    save(); closeSheet(); render(); return;
+  }
   if (draftCode) {
     plan.months[editM] = draftCode;
     if ($('fillEmpty').checked) for (let m = 1; m <= 12; m++) if (!plan.months[m]) plan.months[m] = draftCode;
@@ -857,7 +985,7 @@ if (DEMO) {
   });
   $('swContrib').onclick = () => { includeA = !includeA; $('swContrib').setAttribute('aria-checked', includeA); render(); };
 }
-$('btnClear').onclick = () => { if (!Object.keys(plan.months).length) return; plan.months = {}; save(); render(); toast('已清除全部月份'); };
+$('btnClear').onclick = () => { if (D3) { if (!Object.keys(plan.w).length) return; plan.w = {}; save(); render(); toast('已清除全部配置'); return; } if (!Object.keys(plan.months).length) return; plan.months = {}; save(); render(); toast('已清除全部月份'); };
 
 /* ===== 資料 ===== */
 function onData(d) {
