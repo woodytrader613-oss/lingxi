@@ -28,7 +28,7 @@ a{color:var(--accent)}
 }
 
 .apphead{display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 8px;border-bottom:1px solid #222B3A}
-.apphead .t{font-size:18px;font-weight:700}
+.apphead .t{font-size:18px;font-weight:700;padding-left:8px}
 .iconbtn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;background:transparent;color:var(--ink);cursor:pointer}
 .textbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 8px;border:0;background:transparent;color:var(--accent);font-size:14px;text-decoration:none;cursor:pointer}
 
@@ -37,6 +37,7 @@ a{color:var(--accent)}
 .sec-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 10px}
 .sec-title h2{margin:0;font-size:15px}
 .sec-title span{font-size:12px;color:var(--muted)}
+.sec-title h2 span{font-size:inherit;color:inherit}
 .note{font-size:12px;line-height:1.6;color:var(--muted);margin:10px 0 0}
 .warnline{margin:10px 0 0;padding:8px 10px;border-radius:8px;border:1px solid #4A3A2A;background:#1E1912;font-size:12px;line-height:1.6;color:#E9CFA0}
 
@@ -222,7 +223,6 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
       <div class="app">
         <div class="apphead-wrap">
           <div class="apphead">
-            <button class="iconbtn" type="button" id="btnBack" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
             <div class="t">領息大地圖</div>
             <a class="textbtn" href="#how">計算說明</a>
           </div>
@@ -249,7 +249,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 
           <!-- 2. 方案一：年度配置 -->
           <section id="cardsPanel" class="panel">
-            <div class="sec-title"><h2><i class="step">2</i>方案一：年度配置</h2><span class="tag you">你自己設定</span></div>
+            <div class="sec-title"><h2><i class="step">2</i><span id="ttl2">方案一：年度配置</span></h2><span class="tag you" id="tag2">你自己設定</span></div>
             <div class="grid" id="grid"></div>
             <p class="note">點月份卡片，選這個月要買的 ETF（每月一檔）。同一檔選幾個月，就占幾份比重。</p>
             <div id="result"><div class="empty">資料載入中…</div></div>
@@ -260,7 +260,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 
           <!-- 3. 方案二：建議實踐 -->
           <section id="suggestPanel" class="panel">
-            <div class="sec-title"><h2><i class="step">3</i>方案二：建議實踐</h2><span class="tag auto">自動產生，不能改</span></div>
+            <div class="sec-title"><h2><i class="step">3</i><span id="ttl3">方案二：建議實踐</span></h2><span class="tag auto" id="tag3">自動產生，不能改</span></div>
             <p class="note" id="sugNote" style="margin:0 0 4px"></p>
             <div class="grid" id="sugGrid"></div>
             <div id="sugResult"></div>
@@ -413,7 +413,8 @@ N = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
 const QS = new URLSearchParams(location.search);
 const EMBED_MODE = QS.get('embed') === '1';
 const DEMO = QS.get('demo') === '1';
-const D2 = QS.has('demo2');   // DEMO2：建議實踐不排除任何 ETF，版面只列一組預估與彙整
+const D2 = QS.has('demo2');
+function demo2Titles() { if (!D2) return; $('ttl2').textContent = '年度配置'; $('tag2').textContent = '用戶隨意配置'; $('ttl3').textContent = '建議實踐'; $('tag3').textContent = '建議的正式執行計畫'; }   // DEMO2：建議實踐不排除任何 ETF，版面只列一組預估與彙整
 if (EMBED_MODE) {
   document.documentElement.classList.add('embed');
   if (QS.get('header') === '1') document.documentElement.classList.add('embed-header');
@@ -599,6 +600,7 @@ function render() {
 ${r.noX.length ? `<p class="note">${esc(r.noX.join('、'))} 上市未滿 1 年，不計入預估報酬率（只計入殖利率）。${r.M == null ? '目前沒有可計算報酬率的月份。' : ''}</p>` : ''}${skipNote}
       <p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。${DEMO ? `目前算法：${METHOD_NAME[method]}。` : ''}</p>`;
   }
+  demo2Titles();
   $('result').style.display = D2 ? 'none' : '';   // DEMO2：方案一不單獨顯示預估報酬率、殖利率
   renderSuggest();
   renderRetire(r);
@@ -658,7 +660,8 @@ function renderSuggest() {
 function setSugNote() {
   const dr = SUG && SUG.D2 ? (SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，平均分到 12 個月買進。` : '')
     : SUG && SUG.dropped.length ? `${SUG.dropped.map(g => g.code).join('、')} 沒有可領的配息，已剔除，預算分給其他標的。` : '';
-  $('sugNote').textContent = '由方案一自動產生，每檔 ETF 在除息前一個月買進，全年投入依方案一的權重平均分配。' + dr;
+  const src = D2 ? '年度配置' : '方案一';
+  $('sugNote').textContent = `由${src}自動產生，每檔 ETF 在除息前一個月買進，全年投入依${src}的權重平均分配。` + dr;
 }
 function retireRes(M, N, k) {
   if (!k || N == null) return { status: 'na', msg: '沒有可計算的配置' };
@@ -672,7 +675,7 @@ function daysText(d) {
 }
 function renderRetire(r) {
   const box = $('retire');
-  if (!r.k) { box.innerHTML = '<p class="note">先在方案一設定年度配置，才能比較。</p>'; return; }
+  if (!r.k) { box.innerHTML = `<p class="note">先在${D2 ? '年度配置' : '方案一'}選好 ETF，才能算出結果。</p>`; return; }
   if (!(goal.x > 0)) { box.innerHTML = '<p class="note">請在上方輸入每月現金流目標。</p>'; return; }
   const sg = SUG || { M: null, N: null, k: 0, total: 0 };
   if (D2) {   // DEMO2：只列一組彙整（兩個方案的報酬率、殖利率相同）
@@ -855,7 +858,6 @@ if (DEMO) {
   $('swContrib').onclick = () => { includeA = !includeA; $('swContrib').setAttribute('aria-checked', includeA); render(); };
 }
 $('btnClear').onclick = () => { if (!Object.keys(plan.months).length) return; plan.months = {}; save(); render(); toast('已清除全部月份'); };
-$('btnBack').onclick = closeToApp;
 
 /* ===== 資料 ===== */
 function onData(d) {
