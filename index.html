@@ -741,6 +741,8 @@ function exMonthsOf(code) {
 function exMonthsInfo(code) {
   if (D3 && DB && DB.twseMonths && DB.twseMonths[code] && DB.twseMonths[code].length) return { months: DB.twseMonths[code], src: '證交所行事曆' };
   const m = exMonthsOf(code);
+  // 月配型：官方近 400 天有 10 個月以上除息，視為每月配息，補滿 12 個月（避免某月剛好沒除息就漏買）
+  if (D3 && m.length >= 10 && m.length < 12) return { months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], src: '月配型（每月）' };
   return { months: m, src: m.length ? '官方除息紀錄' : '' };
 }
 let SUG = null;
