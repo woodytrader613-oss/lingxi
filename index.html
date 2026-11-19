@@ -852,11 +852,11 @@ N = (${r.groups.map(g => `${fmt0(g.invest)} × ${p2(g.y)}`).join(' + ')}) ÷ ${f
   else {
     const res = retirePlan({ X, Z, M: r.M, N: r.N, A, i: inf, include: includeA, today: TODAY });
     const Y0 = X * 12 / r.N, rm = Math.pow(1 + r.M, 1 / 12) - 1;
-    h += `<div class="formula">需要的資產規模 Y = X × 12 ÷ N = ${fmt0(X)} × 12 ÷ ${p2(r.N)} = <em>$${fmt0(Y0)}</em>
+    h += `<div class="formula">目標資產（以今天物價計）Y = 每月現金流目標 X × 12 ÷ 殖利率 N = ${fmt0(X)} × 12 ÷ ${p2(r.N)} = <em>$${fmt0(Y0)}</em>
 月利率 = (1 + M)^(1/12) − 1 = (1 + ${p2(r.M)})^(1/12) − 1 = ${(rm * 100).toFixed(4)}%
 每月底：資產 = 上月資產 × (1 + 月利率)${includeA ? ` + 每月投入 ${fmt0(A)}` : ''}
-${inf > 0 ? `第 t 個月需要 = Y × (1 + ${goal.inf}%)^(t ÷ 12)` : '不考慮通膨，需要的資產規模固定為 Y'}
-資產第一次 ≥ 需要的資產規模的那一天，就是可以退休的日期</div>`;
+${inf > 0 ? `含通膨的目標資產：第 t 個月 = Y × (1 + ${goal.inf}%)^(t ÷ 12)（物價每年漲 ${goal.inf}%，目標跟著提高）` : '不考慮通膨，目標資產固定為 Y'}
+你的資產第一次 ≥ 目標資產的那一天，就是可以退休的日期</div>`;
     if (res.status === 'done') h += `<p class="note">目前可投入的資產 $${fmt0(Z)} 已經 ≥ Y $${fmt0(Y0)}，現在就可以退休。</p>`;
     else if (res.status === 'ok') {
       let V = Z; const tr = [`<tr><td>現在</td><td class="num">${fmt0(Z)}</td><td class="num">${fmt0(Y0)}</td><td class="num">${fmt0(Z - Y0)}</td></tr>`];
@@ -867,8 +867,8 @@ ${inf > 0 ? `第 t 個月需要 = Y × (1 + ${goal.inf}%)^(t ÷ 12)` : '不考�
           tr.push(`<tr><td>${k === res.months && k % 12 ? `第 ${k} 個月` : `第 ${k / 12} 年末`}</td><td class="num">${fmt0(V)}</td><td class="num">${fmt0(need)}</td><td class="num">${fmt0(V - need)}</td></tr>`);
       }
       const yrs = Math.floor(res.months / 12), mo = res.months % 12;
-      h += `<div class="tbl-wrap"><table class="doc sm"><thead><tr><th>時間點</th><th>資產</th><th>需要的資產規模</th><th>差距</th></tr></thead><tbody>${tr.join('')}</tbody></table></div>
-      <div class="formula">第 ${res.months} 個月（從今天起第 ${yrs ? yrs + ' 年 ' : ''}${mo} 個月內）資產第一次 ≥ 需要的資產規模
+      h += `<div class="tbl-wrap"><table class="doc sm"><thead><tr><th>時間點</th><th>資產</th><th>${inf > 0 ? '目標資產（含通膨）' : '目標資產'}</th><th>差距</th></tr></thead><tbody>${tr.join('')}</tbody></table></div>
+      <div class="formula">第 ${res.months} 個月（從今天起第 ${yrs ? yrs + ' 年 ' : ''}${mo} 個月內）資產第一次 ≥ 目標資產
 當月內依複利曲線推算到哪一天達標 → <em>${fmtDate(res.date)}</em>（還要約 ${res.R.toFixed(1)} 年）${inf > 0 ? `\n退休時每月需要 = ${fmt0(X)} × (1 + ${goal.inf}%)^${res.R.toFixed(2)} = <em>$${fmt0(X * Math.pow(1 + inf, res.R))}</em>` : ''}</div>`;
     } else h += `<p class="note">${esc(res.msg)}</p>`;
   }
@@ -886,8 +886,8 @@ function renderRetire(r) {
       : x.status === 'done' ? '現在就可以退休' : `<small>${esc(x.msg || '')}</small>`;
     box.innerHTML = `<table class="cmp"><tbody>
       <tr><td>年度總投入</td><td>${sg.k ? '$' + fmt0(sg.total) : '—'}</td></tr>
-      <tr><td>${D3 ? '需要的資產規模 Y' : '需要的股票市值 Y'}</td><td>${x.Y0 ? '$' + fmt0(x.Y0) : '—'}</td></tr>
-      ${goal.inf > 0 ? `<tr><td>${D3 ? '退休時需要的資產規模' : '退休時需要市值'}</td><td>${x.Yt ? '$' + fmt0(x.Yt) : '—'}</td></tr>` : ''}
+      <tr><td>${D3 ? (goal.inf > 0 ? '目標資產（以今天物價計）' : '目標資產') : '需要的股票市值 Y'}</td><td>${x.Y0 ? '$' + fmt0(x.Y0) : '—'}</td></tr>
+      ${goal.inf > 0 ? `<tr><td>${D3 ? '目標資產（含通膨，退休當時）' : '退休時需要市值'}</td><td>${x.Yt ? '$' + fmt0(x.Yt) : '—'}</td></tr>` : ''}
       ${D3 && goal.inf > 0 && x.status === 'ok' ? `<tr><td>退休時每月需要</td><td>$${fmt0(goal.x * Math.pow(1 + goal.inf / 100, x.R))}<small>今天的 $${fmt0(goal.x)}</small></td></tr>` : ''}
       <tr><td>可以退休的推估日期</td><td class="big">${when}</td></tr></tbody></table>`;
     return;
