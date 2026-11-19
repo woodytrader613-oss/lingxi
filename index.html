@@ -285,7 +285,7 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
 
           <!-- 5. 兩個方案比較 -->
           <section id="comparePanel" class="panel">
-            <div class="sec-title"><h2><i class="step">5</i>兩個方案比較</h2><span>可以退休的時間</span></div>
+            <div class="sec-title"><h2><i class="step">5</i><span id="cmpTitle">兩個方案比較</span></h2><span id="cmpTag">可以退休的時間</span></div>
             <div id="retire"></div>
             <a class="embedhow" href="#how">計算說明 <span aria-hidden="true">›</span></a>
           </section>
@@ -413,6 +413,7 @@ N = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
 const QS = new URLSearchParams(location.search);
 const EMBED_MODE = QS.get('embed') === '1';
 const DEMO = QS.get('demo') === '1';
+const D2 = QS.has('demo2');   // DEMO2：建議實踐不排除任何 ETF，版面只列一組預估與彙整
 if (EMBED_MODE) {
   document.documentElement.classList.add('embed');
   if (QS.get('header') === '1') document.documentElement.classList.add('embed-header');
@@ -598,6 +599,7 @@ function render() {
 ${r.noX.length ? `<p class="note">${esc(r.noX.join('、'))} 上市未滿 1 年，不計入預估報酬率（只計入殖利率）。${r.M == null ? '目前沒有可計算報酬率的月份。' : ''}</p>` : ''}${skipNote}
       <p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。${DEMO ? `目前算法：${METHOD_NAME[method]}。` : ''}</p>`;
   }
+  $('result').style.display = D2 ? 'none' : '';   // DEMO2：方案一不單獨顯示預估報酬率、殖利率
   renderSuggest();
   renderRetire(r);
   renderDemoEx();
@@ -616,7 +618,6 @@ function suggestPlan(pl, method, d) {
   const A = pl.amount, cnt = {}; let K = 0;
   for (let m = 1; m <= 12; m++) { const c = pl.months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
   const inc = [], dropped = [];
-  const D2 = QS.has('demo2');   // DEMO2：建議實踐不排除任何 ETF，沒有除息月份的標的平均分到 12 個月
   Object.keys(cnt).forEach(c => {
     const mt = metricsOf(c, method, d), exm = exMonthsOf(c);
     if (D2) { inc.push({ code: c, cnt: cnt[c], exm: exm.length ? exm : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], x: mt.x, y: mt.y, bad: !!mt.reason, noEx: !exm.length }); return; }
@@ -651,7 +652,7 @@ function renderSuggest() {
   }
   $('sugResult').innerHTML = `<div class="kpis" style="margin-top:10px">
       <div class="kpi"><span>預估報酬率</span><b style="color:var(--accent)">${pct(SUG.M, true)}</b><small>年化，已含配息</small></div>
-      <div class="kpi"><span>預估殖利率</span><b>${pct(SUG.N)}</b><small>年化</small></div></div>`;
+      <div class="kpi"><span>預估殖利率</span><b>${pct(SUG.N)}</b><small>年化</small></div></div>${D2 ? '<p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。</p>' : ''}`;
   setSugNote();
 }
 function setSugNote() {
@@ -674,6 +675,19 @@ function renderRetire(r) {
   if (!r.k) { box.innerHTML = '<p class="note">先在方案一設定年度配置，才能比較。</p>'; return; }
   if (!(goal.x > 0)) { box.innerHTML = '<p class="note">請在上方輸入每月現金流目標。</p>'; return; }
   const sg = SUG || { M: null, N: null, k: 0, total: 0 };
+  if (D2) {   // DEMO2：只列一組彙整（兩個方案的報酬率、殖利率相同）
+    $('cmpTitle').textContent = '彙整'; $('cmpTag').textContent = '可以退休的推估日期';
+    const x = retireRes(sg.M, sg.N, sg.k);
+    const when = x.status === 'ok' ? `${x.date.getFullYear()}/${x.date.getMonth() + 1}/${x.date.getDate()}<small>還要約 ${x.R.toFixed(1)} 年</small>`
+      : x.status === 'done' ? '現在就可以退休' : `<small>${esc(x.msg || '')}</small>`;
+    box.innerHTML = `<table class="cmp"><tbody>
+      <tr><td>年度總投入</td><td>${sg.k ? '$' + fmt0(sg.total) : '—'}</td></tr>
+      <tr><td>需要的股票市值 Y</td><td>${x.Y0 ? '$' + fmt0(x.Y0) : '—'}</td></tr>
+      ${goal.inf > 0 ? `<tr><td>退休時需要市值</td><td>${x.Yt ? '$' + fmt0(x.Yt) : '—'}</td></tr>` : ''}
+      <tr><td>可以退休的推估日期</td><td class="big">${when}</td></tr></tbody></table>
+      <p class="note">每月持續投入：${includeA ? '$' + fmt0(plan.amount) : '不納入'}。</p>`;
+    return;
+  }
   const a = retireRes(r.M, r.N, r.k), b = retireRes(sg.M, sg.N, sg.k);
   const hasDate = x => x.status === 'ok' || x.status === 'done';
   const dt = x => x.status === 'ok' ? `${x.date.getFullYear()}/${x.date.getMonth() + 1}/${x.date.getDate()}<small>還要約 ${x.R.toFixed(1)} 年</small>`
