@@ -737,6 +737,12 @@ function exMonthsOf(code) {
   [...((DB.events || {})[code] || []), ...((DB.prevEvents || {})[code] || [])].forEach(e => { if (e && e.ex && e.ex >= limS) set.add(+e.ex.slice(5, 7)); });
   return [...set].sort((a, b) => a - b);
 }
+// 除息月份來源：DEMO3 上市 ETF 優先用證交所 ETF e添富「配息行事曆」；其餘（上櫃等）用官方近 400 天除息紀錄
+function exMonthsInfo(code) {
+  if (D3 && DB && DB.twseMonths && DB.twseMonths[code] && DB.twseMonths[code].length) return { months: DB.twseMonths[code], src: '證交所行事曆' };
+  const m = exMonthsOf(code);
+  return { months: m, src: m.length ? '官方除息紀錄' : '' };
+}
 let SUG = null;
 function suggestPlan(pl, method, d) {
   const A = pl.amount, cnt = {}; let K = 0;
@@ -744,8 +750,8 @@ function suggestPlan(pl, method, d) {
   else for (let m = 1; m <= 12; m++) { const c = pl.months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
   const inc = [], dropped = [];
   Object.keys(cnt).forEach(c => {
-    const mt = metricsOf(c, method, d), exm = exMonthsOf(c);
-    if (D2) { inc.push({ code: c, cnt: cnt[c], exm: exm.length ? exm : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], x: mt.x, y: mt.y, bad: !!mt.reason, noEx: !exm.length }); return; }
+    const mt = metricsOf(c, method, d), info = exMonthsInfo(c), exm = info.months;
+    if (D2) { inc.push({ code: c, cnt: cnt[c], exm: exm.length ? exm : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], x: mt.x, y: mt.y, bad: !!mt.reason, noEx: !exm.length, src: info.src }); return; }
     if (mt.reason) dropped.push({ code: c, why: mt.reason });
     else if (!exm.length || !(mt.y > 0)) dropped.push({ code: c, why: '沒有配息' });
     else inc.push({ code: c, cnt: cnt[c], exm, x: mt.x, y: mt.y });
@@ -829,11 +835,12 @@ N = (${r.groups.map(g => `${fmt0(g.invest)} × ${p2(g.y)}`).join(' + ')}) ÷ ${f
   if (SUG && SUG.groups.length) {
     const sr = SUG.groups.map(g => {
       const buy = [...new Set(g.exm.map(x => (x + 10) % 12 + 1))].sort((a, b) => a - b);
-      return `<tr><td><b>${esc(g.code)}</b></td><td>${g.noEx ? '無除息紀錄' : g.exm.join('、') + ' 月'}</td><td>${g.noEx ? '12 個月平均' : buy.join('、') + ' 月'}</td><td class="num">${fmt0(g.per)}</td></tr>`;
+      return `<tr><td><b>${esc(g.code)}</b></td><td>${g.noEx ? '無除息紀錄' : g.exm.join('、') + ' 月'}<br><small>${esc(g.src || '')}</small></td><td>${g.noEx ? '12 個月平均' : buy.join('、') + ' 月'}</td><td class="num">${fmt0(g.per)}</td></tr>`;
     }).join('');
     h += `<h3>四、建議實踐的買進月份與金額</h3><div class="formula">買進月份 = 除息月份的前一個月；沒有除息紀錄的，平均分到 12 個月
 每次買進金額 = 該檔全年投入 ÷ 買進月份數</div>
     <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>除息月份</th><th>買進月份</th><th>每次買進</th></tr></thead><tbody>${sr}</tbody></table></div>
+    <p class="note">除息月份：上市 ETF 依證交所 ETF e添富「配息行事曆」；上櫃 ETF 依官方近 400 天的除息紀錄。</p>
     <p class="note">建議實踐沿用年度配置的全部標的與占比，只是改在除息前一個月買進，所以預估報酬率與殖利率和上面相同。</p>`;
   }
   // 五、退休
