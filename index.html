@@ -615,8 +615,10 @@ function suggestPlan(pl, method, d) {
   const A = pl.amount, cnt = {}; let K = 0;
   for (let m = 1; m <= 12; m++) { const c = pl.months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
   const inc = [], dropped = [];
+  const D2 = QS.has('demo2');   // DEMO2：建議實踐不排除任何 ETF，沒有除息月份的標的平均分到 12 個月
   Object.keys(cnt).forEach(c => {
     const mt = metricsOf(c, method, d), exm = exMonthsOf(c);
+    if (D2) { inc.push({ code: c, cnt: cnt[c], exm: exm.length ? exm : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], x: mt.x, y: mt.y, bad: !!mt.reason, noEx: !exm.length }); return; }
     if (mt.reason) dropped.push({ code: c, why: mt.reason });
     else if (!exm.length || !(mt.y > 0)) dropped.push({ code: c, why: '沒有配息' });
     else inc.push({ code: c, cnt: cnt[c], exm, x: mt.x, y: mt.y });
@@ -625,10 +627,11 @@ function suggestPlan(pl, method, d) {
   let total = 0, totalX = 0, sumX = 0, sumY = 0;
   inc.forEach(g => {
     g.invest = budget * g.cnt / sumCnt; g.per = g.invest / g.exm.length;
+    if (g.bad) return;   // 缺少還原價資料：和方案一一樣不列入 M、N
     total += g.invest; sumY += g.invest * g.y;
     if (g.x != null) { totalX += g.invest; sumX += g.invest * g.x; }
   });
-  return { amount: A, groups: inc, dropped, total, totalX, M: totalX ? sumX / totalX : null, N: total ? sumY / total : null, k: inc.length };
+  return { amount: A, groups: inc, dropped, total, totalX, M: totalX ? sumX / totalX : null, N: total ? sumY / total : null, k: inc.filter(g => !g.bad).length, noEx: inc.filter(g => g.noEx).map(g => g.code), D2 };
 }
 function renderSuggest() {
   SUG = suggestPlan(plan, method, DB);
@@ -651,7 +654,8 @@ function renderSuggest() {
   setSugNote();
 }
 function setSugNote() {
-  const dr = SUG && SUG.dropped.length ? `${SUG.dropped.map(g => g.code).join('、')} 沒有可領的配息，已剔除，預算分給其他標的。` : '';
+  const dr = SUG && SUG.D2 ? (SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，平均分到 12 個月買進。` : '')
+    : SUG && SUG.dropped.length ? `${SUG.dropped.map(g => g.code).join('、')} 沒有可領的配息，已剔除，預算分給其他標的。` : '';
   $('sugNote').textContent = '由方案一自動產生，每檔 ETF 在除息前一個月買進，全年投入依方案一的權重平均分配。' + dr;
 }
 function retireRes(M, N, k) {
@@ -686,7 +690,7 @@ function renderRetire(r) {
     ${goal.inf > 0 ? `<tr><td>退休時需要市值</td><td>${a.Yt ? '$' + fmt0(a.Yt) : '—'}</td><td>${b.Yt ? '$' + fmt0(b.Yt) : '—'}</td></tr>` : ''}
     <tr><td>可以退休</td><td class="big">${dt(a)}</td><td class="big">${dt(b)}</td></tr></tbody></table>
     ${sum ? `<p class="cmpsum">${sum}</p>` : ''}
-    <p class="note">每月持續投入：${includeA ? '$' + fmt0(plan.amount) : '不納入'}。建議實踐只計入有配息的標的。</p>`;
+    <p class="note">每月持續投入：${includeA ? '$' + fmt0(plan.amount) : '不納入'}。${SUG && SUG.D2 ? '' : '建議實踐只計入有配息的標的。'}</p>`;
 }
 /* ===== DEMO：計算方式與範例 ===== */
 function exCodes() {
