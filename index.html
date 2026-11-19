@@ -89,6 +89,16 @@ a{color:var(--accent)}
 .pick em{font-style:normal;font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
 .pick.bad{--c:var(--warn)}
 .pick .tiny{font-size:10px;color:var(--dim);white-space:normal}
+.sugcard{cursor:default;min-height:72px}
+.sugcard .pick{margin:0}
+.sugcard small.dim{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.sugcard .none{display:flex;align-items:center;justify-content:center;flex:1;color:var(--dim);font-size:12px}
+.retpair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.retpair .ret{margin-top:0;padding:10px}
+.retpair .ret .t{display:block;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.retpair .ret .date{font-size:16px;line-height:1.35}
+.retpair .ret.na .date{font-size:13px}
+.retpair .steps2{font-size:11px;gap:3px 6px}
 .addhint{display:flex;align-items:center;justify-content:center;flex:1;border-radius:6px;border:1px dashed var(--line2);color:var(--dim);font-size:12px}
 .btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .btn{flex:1;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
@@ -217,6 +227,15 @@ table.doc td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:
             <div class="btnrow">
               <button type="button" class="btn ghost" id="btnClear">全部清除</button>
             </div>
+          </section>
+
+
+          <!-- 1b. 建議實踐（由年度配置單向產生） -->
+          <section id="suggestPanel" class="panel">
+            <div class="sec-title"><h2>建議實踐</h2><span>除息前一個月買進</span></div>
+            <div class="grid" id="sugGrid"></div>
+            <div id="sugResult"></div>
+            <p class="note" id="sugNote"></p>
           </section>
 
           <!-- 2. 長期配置的預估表現 -->
@@ -563,24 +582,76 @@ function render() {
 ${r.noX.length ? `<p class="note">${esc(r.noX.join('、'))} 上市未滿 1 年，不計入預估報酬率（只計入殖利率）。${r.M == null ? '目前沒有可計算報酬率的月份。' : ''}</p>` : ''}${skipNote}
       <p class="note">報酬率已包含配息（還原股價），不要與殖利率相加。${DEMO ? `目前算法：${METHOD_NAME[method]}。` : ''}</p>`;
   }
+  renderSuggest();
   renderRetire(r);
   renderDemoEx();
+}
+/* ===== 建議實踐：年度配置單向連動，每檔 ETF 放到「除息前一個月」 ===== */
+function exMonthsOf(code) {
+  if (!DB) return [];
+  const lim = new Date(TODAY.getTime() - 400 * 86400000), limS = lim.getFullYear() + '-' + String(lim.getMonth() + 1).padStart(2, '0') + '-' + String(lim.getDate()).padStart(2, '0');
+  const set = new Set();
+  [...((DB.events || {})[code] || []), ...((DB.prevEvents || {})[code] || [])].forEach(e => { if (e && e.ex && e.ex >= limS) set.add(+e.ex.slice(5, 7)); });
+  return [...set].sort((a, b) => a - b);
+}
+let SUG = null;
+function suggestPlan(pl, method, d) {
+  const A = pl.amount, cnt = {}; let K = 0;
+  for (let m = 1; m <= 12; m++) { const c = pl.months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
+  const inc = [], dropped = [];
+  Object.keys(cnt).forEach(c => {
+    const mt = metricsOf(c, method, d), exm = exMonthsOf(c);
+    if (mt.reason) dropped.push({ code: c, why: mt.reason });
+    else if (!exm.length || !(mt.y > 0)) dropped.push({ code: c, why: '沒有配息' });
+    else inc.push({ code: c, cnt: cnt[c], exm, x: mt.x, y: mt.y });
+  });
+  const sumCnt = inc.reduce((t, g) => t + g.cnt, 0), budget = K * A;   // 年度總預算不變，被剔除標的的預算按比例分給其他標的
+  let total = 0, totalX = 0, sumX = 0, sumY = 0;
+  inc.forEach(g => {
+    g.invest = budget * g.cnt / sumCnt; g.per = g.invest / g.exm.length;
+    total += g.invest; sumY += g.invest * g.y;
+    if (g.x != null) { totalX += g.invest; sumX += g.invest * g.x; }
+  });
+  return { amount: A, groups: inc, dropped, total, totalX, M: totalX ? sumX / totalX : null, N: total ? sumY / total : null, k: inc.length };
+}
+function renderSuggest() {
+  SUG = suggestPlan(plan, method, DB);
+  const col = colorMap(), buy = {};
+  for (let m = 1; m <= 12; m++) buy[m] = [];
+  SUG.groups.forEach(g => g.exm.forEach(x => buy[(x + 10) % 12 + 1].push(g)));
+  $('sugGrid').innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+    const tot = buy[m].reduce((t, g) => t + g.per, 0);
+    const body = buy[m].length ? buy[m].map(g => `<div class="pick" style="--c:${col[g.code]}"><b>${esc(g.code)}</b><span>${esc(NAMES[g.code] || '')}</span><em>$${fmt0(g.per)}</em></div>`).join('') : '<span class="none">—</span>';
+    return `<div class="card sugcard"><div class="mh"><b>${m} 月</b>${tot ? `<small class="dim">$${fmt0(tot)}</small>` : ''}</div>${body}</div>`;
+  }).join('');
+  if (!SUG.k) {
+    $('sugResult').innerHTML = '';
+    $('sugNote').textContent = Object.keys(plan.months).some(m => plan.months[m]) ? '年度配置中沒有可以領息的標的，這裡無法產生建議實踐。' : '先在上方設定年度配置，這裡就會產生建議實踐的月份。';
+    return;
+  }
+  $('sugResult').innerHTML = `<div class="kpis" style="margin-top:10px">
+      <div class="kpi"><span>預估報酬率</span><b style="color:var(--accent)">${pct(SUG.M, true)}</b><small>年化，已含配息</small></div>
+      <div class="kpi"><span>預估殖利率</span><b>${pct(SUG.N)}</b><small>年化</small></div></div>
+    <div class="total"><span>年度總投入</span><b>$${fmt0(SUG.total)}</b></div>`;
+  $('sugNote').textContent = '依上方年度配置自動產生，不能在這裡修改。每檔 ETF 放在除息月份的前一個月，全年投入金額依年度配置的權重平均分配到這些月份。'
+    + (SUG.dropped.length ? `${SUG.dropped.map(g => g.code).join('、')} 沒有可領的配息，不列入，預算按比例分給其他標的。` : '');
+}
+function retireCard(title, M, N, k) {
+  if (!k || N == null) return `<div class="ret na"><span class="t">${title}</span><span class="date">沒有可計算的配置</span></div>`;
+  const res = retirePlan({ X: goal.x, Z: goal.z, M, N, A: plan.amount, i: goal.inf / 100, include: includeA, today: TODAY });
+  const facts = `<div class="steps2"><span>預估報酬率</span><b>${pct(M, true)}</b><span>預估殖利率</span><b>${pct(N)}</b>${res.Y0 ? `<span>需要市值 Y</span><b>$${fmt0(res.Y0)}</b>` : ''}${goal.inf > 0 && res.Yt ? `<span>退休時需要</span><b>$${fmt0(res.Yt)}</b>` : ''}</div>`;
+  if (res.status === 'na') return `<div class="ret na"><span class="t">${title}</span><span class="date">${esc(res.msg)}</span>${facts}</div>`;
+  if (res.status === 'done') return `<div class="ret done"><span class="t">${title}</span><span class="date">現在就可以退休</span>${facts}</div>`;
+  const totalM = Math.round(res.R * 12), yrs = Math.floor(totalM / 12), mos = totalM % 12;
+  return `<div class="ret"><span class="t">${title}</span><span class="date">${fmtDate(res.date)}</span><div class="sub">還要約 ${res.R.toFixed(1)} 年（${yrs ? yrs + ' 年' : ''}${mos ? mos + ' 個月' : ''}）</div>${facts}</div>`;
 }
 function renderRetire(r) {
   const box = $('retire');
   if (!r.k) { box.innerHTML = '<p class="note">先在上方設定年度配置，才能推算退休日期。</p>'; return; }
-  const res = retirePlan({ X: goal.x, Z: goal.z, M: r.M, N: r.N, A: plan.amount, i: goal.inf / 100, include: includeA, today: TODAY });
-  if (res.status === 'input') { box.innerHTML = `<p class="note">${esc(res.msg)}</p>`; return; }
-  const facts = `<div class="steps2">
-      ${res.Y0 ? `<span>需要的股票市值 Y</span><b>$${fmt0(res.Y0)}</b>` : ''}
-      <span>預估報酬率 M／殖利率 N</span><b>${pct(r.M, true)}／${pct(r.N)}</b>
-      <span>每月持續投入</span><b>${includeA ? '$' + fmt0(plan.amount) : '不納入'}</b>
-      ${goal.inf > 0 && res.Yt ? `<span>退休當時需要市值</span><b>$${fmt0(res.Yt)}</b>` : ''}</div>`;
-  if (res.status === 'na') { box.innerHTML = `<div class="ret na"><span class="k">可以退休的日期</span><span class="date">${esc(res.msg)}</span>${facts}</div>`; return; }
-  if (res.status === 'done') { box.innerHTML = `<div class="ret done"><span class="k">可以退休的日期</span><span class="date">現在就可以退休</span><div class="sub">目前市值 $${fmt0(goal.z)} 已達需要的 $${fmt0(res.Y0)}</div>${facts}</div>`; return; }
-  const totalM = Math.round(res.R * 12), yrs = Math.floor(totalM / 12), mos = totalM % 12;
-  box.innerHTML = `<div class="ret"><span class="k">可以退休的日期</span><span class="date">${fmtDate(res.date)}</span>
-    <div class="sub">還要約 ${res.R.toFixed(1)} 年（${yrs ? yrs + ' 年' : ''}${mos ? mos + ' 個月' : ''}）</div>${facts}</div>`;
+  if (!(goal.x > 0)) { box.innerHTML = '<p class="note">請輸入每月現金流目標</p>'; return; }
+  const sg = SUG || { M: null, N: null, k: 0 };
+  box.innerHTML = `<div class="retpair">${retireCard('年度配置', r.M, r.N, r.k)}${retireCard('建議實踐', sg.M, sg.N, sg.k)}</div>
+    <p class="note">每月持續投入：${includeA ? '$' + fmt0(plan.amount) : '不納入'}。「建議實踐」只計入有配息的標的。</p>`;
 }
 /* ===== DEMO：計算方式與範例 ===== */
 function exCodes() {
