@@ -335,6 +335,7 @@ const DEMO = QS.get('demo') === '1';     // ?demo=1：顯示「預估算法」�
    cons＝保守預估：min(最近 3 期單期殖利率中位數×次數×最新收盤, 近一年實配)÷次數（官方資料、同步程式算好；ETF 11/18 起、個股 11/18 起）；沒有 cons 的改用 amt
    amt＝歷年每股配息平均÷一年次數；yld＝歷年平均殖利率×最新收盤÷一年次數；amt10＝近 10 年每股配息平均÷一年次數 */
 let METHOD = !DEMO ? 'cons' : /^(cons|amt|yld|amt10)$/.test(QS.get('est') || '') ? QS.get('est') : store.get(KEY_M, 'cons');   // 正式版一律保守預估（11/18 使用者決定）；?est= 只在 DEMO 有效
+const EXM = {};                          // ETF 代號 → 官方近 400 天除息月份（領息大地圖同步程式產生的 exMonths；11/19 起）
 const EST = {};                          // 代號 → {n, amt, yld, years, amt10, cons}（同步程式事先算好）
 let PRDIST = null;
 const actualByCode = {};                // 今年＋去年的正式配息（含已公告未發放）
@@ -370,14 +371,39 @@ function estimatesFor(code) {
     const b = last365.length ? last365 : hist.slice(-n);
     per = b.reduce((t, e) => t + e.cash, 0) / b.length;
   }
-  return hist.slice(-n).map(p => ({ code, ex: p.ex, pay: p.pay || weekday(addDays(p.ex, 30)), cash: per, estimate: true }));
+  return templateOf(code, hist, n).map(p => ({ code, ex: p.ex, pay: p.pay || weekday(addDays(p.ex, 30)), cash: per, estimate: true }));
+}
+/* 預估用的配息範本（決定排在哪些月份；期數固定 n，全年總額不變）。
+   ETF 有官方除息月份時（11/19 起）：近 365 天的配息紀錄，加上官方有除息、但紀錄漏掉的月份（雪鴞月配型會漏月），
+   補的那期：除息日＝該檔慣用的日期（中位數），發放日＝除息日＋該檔慣用的間隔天數；不足 n 期用更早的紀錄補，超過取最近 n 期。
+   沒有官方除息月份（個股、舊資料）：照舊取最近 n 次配息。 */
+function templateOf(code, hist, n) {
+  const om = EXM[code];
+  if (!om || !om.length) return hist.slice(-n);
+  const y365 = addDays(TODAY, -365);
+  const med = a => { const b = a.slice().sort((x, y) => x - y); return b[b.length >> 1]; };
+  const lags = hist.filter(e => e.pay).map(e => dayDiff(e.pay, e.ex));
+  const lag = lags.length ? med(lags) : 30;
+  const dom = Math.min(28, med(hist.map(e => +e.ex.slice(8, 10))));
+  let t = hist.filter(e => e.ex > y365);
+  const have = new Set(t.map(e => +e.ex.slice(5, 7)));
+  om.forEach(m => {
+    if (have.has(m)) return;
+    let ex = `${TODAY.slice(0, 4)}-${String(m).padStart(2, '0')}-${String(dom).padStart(2, '0')}`;
+    if (ex > TODAY) ex = `${+TODAY.slice(0, 4) - 1}${ex.slice(4)}`;
+    t.push({ ex, pay: weekday(addDays(ex, lag)) });
+  });
+  t.sort((a, b) => a.ex < b.ex ? -1 : 1);
+  if (t.length < n) t = hist.filter(e => e.ex <= y365).slice(-(n - t.length)).concat(t);
+  return t.length > n ? t.slice(-n) : t;
 }
 /* 有配息紀錄、但保守預估算不出來的代號（不計入預估） */
 function noEst(code) {
   if (METHOD !== 'cons') return false;
   const hist = (actualByCode[code] || []).filter(e => e.cash > 0 && e.ex <= TODAY);
   const E = EST[code];
-  return hist.length > 0 && !(E && E.cons != null && E.cons >= 0);   // cons＝0 是「預估不配」（例：400 天內沒除息的 ETF），不算無法預估
+  if (!hist.length) return !!(E && E.cons > 0 && (EXM[code] || []).length);   // 官方有除息、有保守值，但沒有任何配息日期紀錄（例 00883B）→ 無法排月份，標示無法預估（11/19 使用者決定）
+  return !(E && E.cons != null && E.cons >= 0);   // cons＝0 是「預估不配」（例：400 天內沒除息的 ETF），不算無法預估
 }
 /* ---------- PR 值 ---------- */
 function normInv(q) {                     // 標準常態反函數（Acklam 近似），示意分布用
@@ -472,7 +498,7 @@ function render() {
 }
 /* ---------- 庫存編輯 ---------- */
 let draft = [];
-function nameOf(c) { const s = DATA.sec[c]; return s ? `${s[0]}・${s[1]}${actualByCode[c] ? (noEst(c) ? '・資料不足無法預估' : '') : '・近兩年無配息'}` : ''; }
+function nameOf(c) { const s = DATA.sec[c]; return s ? `${s[0]}・${s[1]}${noEst(c) ? '・資料不足無法預估' : actualByCode[c] ? '' : '・近兩年無配息'}` : ''; }
 function openSheet() {
   if (!DATA) return;
   draft = holdings.map(h => [h[0], h[1]]);
@@ -583,6 +609,7 @@ function boot() {
     if (et.status === 'fulfilled' && et.value && et.value.etfs) {
       const d = et.value;
       d.etfs.forEach(x => { sec[x.code] = [x.name, 'ETF']; });
+      Object.entries(d.exMonths || {}).forEach(([c, ms]) => { if (Array.isArray(ms)) EXM[c] = ms.map(Number); });
       Object.entries(d.est || {}).forEach(([c, e]) => { if (e && e[0] > 0) EST[c] = { n: +e[0], amt: +e[1], yld: e[2] == null ? null : +e[2], years: +e[3], amt10: e[4] == null ? null : +e[4], cons: e[5] == null ? null : +e[5] }; });
       [d.events, d.prevEvents].forEach(group => Object.entries(group || {}).forEach(([c, list]) => list.forEach(x => {
         if (x.ex) { addActual(c, { code: c, ex: x.ex, pay: x.pay || '', cash: +x.dps || 0, est: !!(x.estPay || x.estDps) }); n++; }
