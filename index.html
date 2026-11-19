@@ -605,6 +605,7 @@ ${r.noX.length ? `<p class="note">${esc(r.noX.join('、'))} 上市未滿 1 年�
 /* ===== 建議實踐：年度配置單向連動，每檔 ETF 放到「除息前一個月」 ===== */
 function exMonthsOf(code) {
   if (!DB) return [];
+  if (DB.exMonths) return DB.exMonths[code] || [];   // 官方近 400 天除息月份（sync_lingxi 產生）；舊資料沒有這欄才用下面的推算
   const lim = new Date(TODAY.getTime() - 400 * 86400000), limS = lim.getFullYear() + '-' + String(lim.getMonth() + 1).padStart(2, '0') + '-' + String(lim.getDate()).padStart(2, '0');
   const set = new Set();
   [...((DB.events || {})[code] || []), ...((DB.prevEvents || {})[code] || [])].forEach(e => { if (e && e.ex && e.ex >= limS) set.add(+e.ex.slice(5, 7)); });
