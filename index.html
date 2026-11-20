@@ -160,6 +160,7 @@ a{color:var(--accent)}
 .qbtn{min-height:36px;padding:0 10px;border-radius:18px;border:1px solid var(--line2);background:transparent;color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer}
 .qbtn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .qbtn:disabled{opacity:.35;cursor:default}
+.qtitle{flex:0 0 100%;margin-top:4px;font-size:12px;color:var(--dim)}
 .results{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:260px;overflow:auto}
 .res{display:grid;grid-template-columns:68px 1fr auto;align-items:center;gap:8px;min-height:48px;padding:4px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:13px;text-align:left;cursor:pointer}
 .res b{color:var(--accent)}
@@ -1038,9 +1039,19 @@ function tagOf(code) {
   const r = metricsOf(code, method, DB);
   return r.reason || '';
 }
+const QUICK_ETF4 = ['0056', '00878', '00919', '00929', '00713'];   // DEMO4：高股息 ETF
+const QUICK_STK4 = ['2330', '2412', '2886', '2884', '2891'];       // DEMO4：存股族常見的個股（台積電、中華電、兆豐金、玉山金、中信金）
+function quickBtn(c, withName) {
+  return `<button type="button" class="qbtn" data-c="${c}" aria-pressed="${draftCode === c}" ${metricsOf(c, method, DB).reason ? 'disabled' : ''}>${c}${withName && NAMES[c] ? ' ' + esc(NAMES[c]) : ''}</button>`;
+}
+function quickHtml() {
+  if (!D4) return QUICK.filter(c => FC[c]).map(c => quickBtn(c, false)).join('');
+  const grp = (title, list) => { const l = list.filter(c => FC[c]); return l.length ? `<div class="qtitle">${title}</div>` + l.map(c => quickBtn(c, true)).join('') : ''; };
+  return grp('高股息 ETF', QUICK_ETF4) + grp('存股族常見的個股', QUICK_STK4);
+}
 function renderPicker() {
   const q = $('search').value.trim().toLowerCase();
-  $('quick').innerHTML = QUICK.filter(c => FC[c]).map(c => `<button type="button" class="qbtn" data-c="${c}" aria-pressed="${draftCode === c}" ${metricsOf(c, method, DB).reason ? 'disabled' : ''}>${c}</button>`).join('');
+  $('quick').innerHTML = quickHtml();
   $('quick').querySelectorAll('[data-c]').forEach(b => b.onclick = () => choose(b.dataset.c));
   const box = $('results');
   if (q) {
