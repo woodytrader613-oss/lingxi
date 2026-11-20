@@ -438,14 +438,15 @@ const EMBED_MODE = QS.get('embed') === '1';
 const DEMO = QS.get('demo') === '1';
 const D3 = QS.has('demo3');   // DEMO3：DEMO2 ＋ 年度配置改占比（%）、退休條件用詞調整
 const D2 = QS.has('demo2') || D3;
-const AN = D3 ? '年度標的配置' : '年度配置';   // DEMO3 改稱「年度標的配置」
+const AN = D3 ? '年度標的配置' : '年度配置';
+const SN = D3 ? '每月執行建議' : '建議實踐';   // DEMO3 改稱「年度標的配置」
 function demo3Labels() {
   $('d3Trace').hidden = false; $('traceLink').hidden = false;
   document.querySelector('label[for=goalX]').innerHTML = `每月現金流目標<small>${goal.inf > 0 ? '以今天的物價計，退休時會依通膨調高' : '不考慮通膨'}</small>`;
   document.querySelector('label[for=stockZ]').innerHTML = '目前可投入的資產<small>股票市值加現金，假設全部換成上面的配置</small>';
   $('gridNote').textContent = '選要配置的 ETF，填上各自的占比（%）。';
 }
-function demo2Titles() { if (!D2) return; if (D3) demo3Labels(); $('ttl2').textContent = AN; $('tag2').textContent = D3 ? '用戶自行配置' : '用戶隨意配置'; if (D3) $('ttl1').textContent = '計畫投入資金'; $('ttl3').textContent = '建議實踐'; $('tag3').textContent = '建議的正式執行計畫'; }   // DEMO2：建議實踐不排除任何 ETF，版面只列一組預估與彙整
+function demo2Titles() { if (!D2) return; if (D3) demo3Labels(); $('ttl2').textContent = AN; $('tag2').textContent = D3 ? '用戶自行配置' : '用戶隨意配置'; if (D3) $('ttl1').textContent = '資金投入計畫'; $('ttl3').textContent = SN; $('tag3').textContent = '建議的正式執行計畫'; if (D3) $('tag3').hidden = true; }   // DEMO2：建議實踐不排除任何 ETF，版面只列一組預估與彙整
 if (EMBED_MODE) {
   document.documentElement.classList.add('embed');
   if (QS.get('header') === '1') document.documentElement.classList.add('embed-header');
@@ -782,7 +783,7 @@ function renderSuggest() {
   }).join('');
   if (!SUG.k) {
     $('sugResult').innerHTML = '';
-    $('sugNote').textContent = (D3 ? planWeights().codes.length : Object.keys(plan.months).some(m => plan.months[m])) ? AN + '中沒有可以領息的標的，這裡無法產生建議實踐。' : '先在上方設定' + AN + '，這裡就會產生建議實踐的月份。';
+    $('sugNote').textContent = (D3 ? planWeights().codes.length : Object.keys(plan.months).some(m => plan.months[m])) ? AN + '中沒有可以領息的標的，這裡無法產生' + SN + '。' : '先在上方設定' + AN + '，這裡就會產生' + SN + '的月份。';
     return;
   }
   $('sugResult').innerHTML = `<div class="kpis" style="margin-top:10px">
@@ -841,11 +842,11 @@ N = (${r.groups.map(g => `${fmt0(g.invest)} × ${p2(g.y)}`).join(' + ')}) ÷ ${f
       const buy = [...new Set(g.exm.map(x => (x + 10) % 12 + 1))].sort((a, b) => a - b);
       return `<tr><td><b>${esc(g.code)}</b></td><td>${g.noEx ? '無除息紀錄' : g.exm.join('、') + ' 月'}<br><small>${esc(g.src || '')}</small></td><td>${g.noEx ? '12 個月平均' : buy.join('、') + ' 月'}</td><td class="num">${fmt0(g.per)}</td></tr>`;
     }).join('');
-    h += `<h3>四、建議實踐的買進月份與金額</h3><div class="formula">買進月份 = 除息月份的前一個月；沒有除息紀錄的，平均分到 12 個月
+    h += `<h3>四、${SN}的買進月份與金額</h3><div class="formula">買進月份 = 除息月份的前一個月；沒有除息紀錄的，平均分到 12 個月
 每次買進金額 = 該檔全年投入 ÷ 買進月份數</div>
     <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>除息月份</th><th>買進月份</th><th>每次買進</th></tr></thead><tbody>${sr}</tbody></table></div>
     <p class="note">除息月份：上市 ETF 依證交所 ETF e添富「配息行事曆」；上櫃 ETF 依官方近 400 天的除息紀錄。</p>
-    <p class="note">建議實踐沿用${AN}的全部標的與占比，只是改在除息前一個月買進，所以預估報酬率與殖利率和上面相同。</p>`;
+    <p class="note">${SN}沿用${AN}的全部標的與占比，只是改在除息前一個月買進，所以預估報酬率與殖利率和上面相同。</p>`;
   }
   // 五、退休
   h += '<h3>五、可以退休的日期</h3>';
@@ -902,10 +903,10 @@ function renderRetire(r) {
   let sum = '';
   if (hasDate(a) && hasDate(b)) {
     const diff = Math.round((b.date - a.date) / 86400000);
-    sum += diff === 0 ? '兩個方案的退休日期相同' : `建議實踐比${AN}${diff < 0 ? '早' : '晚'}${daysText(diff)}退休`;
+    sum += diff === 0 ? '兩個方案的退休日期相同' : `${SN}比${AN}${diff < 0 ? '早' : '晚'}${daysText(diff)}退休`;
   }
   if (sg.k) sum += `${sum ? '；' : ''}殖利率 ${pct(r.N)} → ${pct(sg.N)}，報酬率 ${pct(r.M, true)} → ${pct(sg.M, true)}`;
-  box.innerHTML = `<table class="cmp"><thead><tr><th></th><th>${AN}</th><th>建議實踐</th></tr></thead><tbody>
+  box.innerHTML = `<table class="cmp"><thead><tr><th></th><th>${AN}</th><th>${SN}</th></tr></thead><tbody>
     <tr><td>年度總投入</td><td>$${fmt0(r.total)}</td><td>${sg.k ? '$' + fmt0(sg.total) : '—'}</td></tr>
     <tr><td>需要的股票市值 Y</td><td>${yCell(a)}</td><td>${yCell(b)}</td></tr>
     ${goal.inf > 0 ? `<tr><td>退休時需要市值</td><td>${a.Yt ? '$' + fmt0(a.Yt) : '—'}</td><td>${b.Yt ? '$' + fmt0(b.Yt) : '—'}</td></tr>` : ''}
