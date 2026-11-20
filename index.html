@@ -438,6 +438,7 @@ const QS = new URLSearchParams(location.search);
 const EMBED_MODE = QS.get('embed') === '1';
 const DEMO = QS.get('demo') === '1';
 const D4 = QS.has('demo4');   // DEMO4：DEMO3 ＋ 目前資產可帶入 APP 庫存／自行輸入、拿掉通膨
+const TA = D4 ? '可退休時的資產' : '目標資產';
 const D3 = QS.has('demo3') || D4;   // DEMO3：DEMO2 ＋ 年度配置改占比（%）、退休條件用詞調整
 const D2 = QS.has('demo2') || D3;
 const AN = D3 ? '年度標的配置' : '年度配置';
@@ -446,7 +447,8 @@ const WT = false;   // 占比（%）配置已停用：DEMO3 的年度標的配�
 function demo3Labels() {
   $('d3Trace').hidden = false; $('traceLink').hidden = false;
   if (D4) {
-    document.querySelector('label[for=goalX]').innerHTML = '每月現金流目標<small>不考慮通膨，可自行調高</small>';
+    document.querySelector('label[for=goalX]').innerHTML = '每月現金流目標';
+    document.querySelector('#retirePanel .sec-title span').textContent = '用股息cover每月開銷';
     document.querySelector('label[for=stockZ]').innerHTML = '目前資產<small>自行輸入，或帶入 APP 內的庫存市值</small>';
     return;
   }
@@ -712,8 +714,8 @@ function render(keepList) {
     let body;
     if (!code) body = '<span class="addhint">＋ 選 ETF</span>';
     else if (mt.reason) body = `<div class="pick bad"><b>${esc(code)}</b><span>${esc(mt.reason)}</span><em>不列入計算</em></div>`;
-    else body = `<div class="pick" style="--c:${col[code]}"><b>${esc(code)}</b><span>${esc(NAMES[code] || '')}</span><em>$${fmt0(plan.amount)}</em>${mt.young ? '<span class="tiny">未滿 1 年・不計報酬率</span>' : ''}</div>`;
-    return `<button type="button" class="card" data-m="${m}" aria-label="${m} 月${code ? '，' + code : '，尚未設定'}"><div class="mh"><b>${m} 月</b>${m === nowM ? '<span class="badge">本月</span>' : ''}</div>${body}</button>`;
+    else body = `<div class="pick" style="--c:${col[code]}"><b>${esc(code)}</b><span>${esc(NAMES[code] || '')}</span>${D4 ? '' : `<em>$${fmt0(plan.amount)}</em>`}${mt.young ? '<span class="tiny">未滿 1 年・不計報酬率</span>' : ''}</div>`;
+    return `<button type="button" class="card" data-m="${m}" aria-label="${m} 月${code ? '，' + code : '，尚未設定'}"><div class="mh"><b>${m} 月</b>${m === nowM && !D4 ? '<span class="badge">本月</span>' : ''}</div>${body}</button>`;
   }).join('');
   $('grid').querySelectorAll('.card').forEach(c => c.onclick = () => openSheet(+c.dataset.m));
   }
@@ -821,7 +823,7 @@ function renderSuggest() {
   setSugNote();
 }
 function setSugNote() {
-  if (D3) { $('sugNote').textContent = `${AN}的每檔 ETF，放在它發放股息的月份，提醒你哪個月會收到股息（不含金額）。` + (SUG && SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，不放入月份。` : ''); return; }
+  if (D3) { $('sugNote').textContent = `${AN}的每檔 ETF，放在它發放股息的月份，提醒你哪個月會收到股息${D4 ? '' : '（不含金額）'}。` + (SUG && SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，不放入月份。` : ''); return; }
   const dr = SUG && SUG.D2 ? (SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，平均分到 12 個月買進。` : '')
     : SUG && SUG.dropped.length ? `${SUG.dropped.map(g => g.code).join('、')} 沒有可領的配息，已剔除，預算分給其他標的。` : '';
   const src = D2 ? AN : '方案一';
@@ -886,11 +888,11 @@ N = (${r.groups.map(g => `${fmt0(g.invest)} × ${p2(g.y)}`).join(' + ')}) ÷ ${f
   else {
     const res = retirePlan({ X, Z, M: r.M, N: r.N, A, i: inf, include: includeA, today: TODAY });
     const Y0 = X * 12 / r.N, rm = Math.pow(1 + r.M, 1 / 12) - 1;
-    h += `<div class="formula">目標資產（以今天物價計）Y = 每月現金流目標 X × 12 ÷ 殖利率 N = ${fmt0(X)} × 12 ÷ ${p2(r.N)} = <em>$${fmt0(Y0)}</em>
+    h += `<div class="formula">${D4 ? '可退休時的資產' : '目標資產（以今天物價計）'}Y = 每月現金流目標 X × 12 ÷ 殖利率 N = ${fmt0(X)} × 12 ÷ ${p2(r.N)} = <em>$${fmt0(Y0)}</em>
 月利率 = (1 + M)^(1/12) − 1 = (1 + ${p2(r.M)})^(1/12) − 1 = ${(rm * 100).toFixed(4)}%
 每月底：資產 = 上月資產 × (1 + 月利率)${includeA ? ` + 每月投入 ${fmt0(A)}` : ''}
-${inf > 0 ? `含通膨的目標資產：第 t 個月 = Y × (1 + ${goal.inf}%)^(t ÷ 12)（物價每年漲 ${goal.inf}%，目標跟著提高）` : (D4 ? '目標資產固定為 Y（不考慮通膨，可自行調高每月現金流目標）' : '不考慮通膨，目標資產固定為 Y')}
-你的資產第一次 ≥ 目標資產的那一天，就是可以退休的日期</div>`;
+${inf > 0 ? `含通膨的目標資產：第 t 個月 = Y × (1 + ${goal.inf}%)^(t ÷ 12)（物價每年漲 ${goal.inf}%，目標跟著提高）` : (D4 ? '可退休時的資產固定為 Y' : '不考慮通膨，目標資產固定為 Y')}
+你的資產第一次 ≥ ${TA}的那一天，就是可以退休的日期</div>`;
     if (res.status === 'done') h += `<p class="note">目前可投入的資產 $${fmt0(Z)} 已經 ≥ Y $${fmt0(Y0)}，現在就可以退休。</p>`;
     else if (res.status === 'ok') {
       let V = Z; const tr = [`<tr><td>現在</td><td class="num">${fmt0(Z)}</td><td class="num">${fmt0(Y0)}</td><td class="num">${fmt0(Z - Y0)}</td></tr>`];
@@ -901,8 +903,8 @@ ${inf > 0 ? `含通膨的目標資產：第 t 個月 = Y × (1 + ${goal.inf}%)^(
           tr.push(`<tr><td>${k === res.months && k % 12 ? `第 ${k} 個月` : `第 ${k / 12} 年末`}</td><td class="num">${fmt0(V)}</td><td class="num">${fmt0(need)}</td><td class="num">${fmt0(V - need)}</td></tr>`);
       }
       const yrs = Math.floor(res.months / 12), mo = res.months % 12;
-      h += `<div class="tbl-wrap"><table class="doc sm"><thead><tr><th>時間點</th><th>資產</th><th>${inf > 0 ? '目標資產（含通膨）' : '目標資產'}</th><th>差距</th></tr></thead><tbody>${tr.join('')}</tbody></table></div>
-      <div class="formula">第 ${res.months} 個月（從今天起第 ${yrs ? yrs + ' 年 ' : ''}${mo} 個月內）資產第一次 ≥ 目標資產
+      h += `<div class="tbl-wrap"><table class="doc sm"><thead><tr><th>時間點</th><th>資產</th><th>${inf > 0 ? '目標資產（含通膨）' : TA}</th><th>差距</th></tr></thead><tbody>${tr.join('')}</tbody></table></div>
+      <div class="formula">第 ${res.months} 個月（從今天起第 ${yrs ? yrs + ' 年 ' : ''}${mo} 個月內）資產第一次 ≥ ${TA}
 當月內依複利曲線推算到哪一天達標 → <em>${fmtDate(res.date)}</em>（還要約 ${res.R.toFixed(1)} 年）${inf > 0 ? `\n退休時每月需要 = ${fmt0(X)} × (1 + ${goal.inf}%)^${res.R.toFixed(2)} = <em>$${fmt0(X * Math.pow(1 + inf, res.R))}</em>` : ''}</div>`;
     } else h += `<p class="note">${esc(res.msg)}</p>`;
   }
@@ -914,13 +916,13 @@ function renderRetire(r) {
   if (!(goal.x > 0)) { box.innerHTML = '<p class="note">請在上方輸入每月現金流目標。</p>'; return; }
   const sg = SUG || { M: null, N: null, k: 0, total: 0 };
   if (D2) {   // DEMO2：只列一組彙整（兩個方案的報酬率、殖利率相同）
-    $('cmpTitle').textContent = '彙整'; $('cmpTag').textContent = '可以退休的推估日期';
+    $('cmpTitle').textContent = D4 ? '退休計算器' : '彙整'; $('cmpTag').textContent = D4 ? '' : '可以退休的推估日期';
     const x = retireRes(sg.M, sg.N, sg.k);
     const when = x.status === 'ok' ? `${x.date.getFullYear()}/${x.date.getMonth() + 1}/${x.date.getDate()}<small>還要約 ${x.R.toFixed(1)} 年</small>`
       : x.status === 'done' ? '現在就可以退休' : `<small>${esc(x.msg || '')}</small>`;
     box.innerHTML = `<table class="cmp"><tbody>
-      <tr><td>年度總投入</td><td>${sg.k ? '$' + fmt0(sg.total) : '—'}</td></tr>
-      <tr><td>${D3 ? (goal.inf > 0 ? '目標資產（以今天物價計）' : '目標資產') : '需要的股票市值 Y'}</td><td>${x.Y0 ? '$' + fmt0(x.Y0) : '—'}</td></tr>
+      <tr><td>${D4 ? '每年度總投入' : '年度總投入'}</td><td>${sg.k ? '$' + fmt0(sg.total) : '—'}</td></tr>
+      <tr><td>${D3 ? (goal.inf > 0 ? '目標資產（以今天物價計）' : TA) : '需要的股票市值 Y'}</td><td>${x.Y0 ? '$' + fmt0(x.Y0) : '—'}</td></tr>
       ${goal.inf > 0 ? `<tr><td>${D3 ? '目標資產（含通膨，退休當時）' : '退休時需要市值'}</td><td>${x.Yt ? '$' + fmt0(x.Yt) : '—'}</td></tr>` : ''}
       ${D3 && goal.inf > 0 && x.status === 'ok' ? `<tr><td>退休時每月需要</td><td>$${fmt0(goal.x * Math.pow(1 + goal.inf / 100, x.R))}<small>今天的 $${fmt0(goal.x)}</small></td></tr>` : ''}
       <tr><td>可以退休的推估日期</td><td class="big">${when}</td></tr></tbody></table>`;
@@ -1129,7 +1131,7 @@ function onData(d) {
   if (src === 'url') { save(); toast('已載入分享的配置'); }
   initInputs();
   const dl = `資料至 ${String(d.base || '').replace(/-/g, '/')}`;
-  if (D3) { $('dataLabel').textContent = ''; $('dataLabel2').textContent = '股價與配息資料至 ' + String(d.base || '').replace(/-/g, '/'); $('dataLabel2').hidden = false; }
+  if (D3) { $('dataLabel').textContent = ''; $('dataLabel2').textContent = D4 ? '股價與配息資料: ' + String(d.base || '').replace(/-/g, '/') + '更新' : '股價與配息資料至 ' + String(d.base || '').replace(/-/g, '/'); $('dataLabel2').hidden = false; }
   else $('dataLabel').textContent = dl;
   const cnt = {}; let ok = 0;
   Object.keys(FC).forEach(c => { const r = metricsOf(c, 'cons', d); if (r.reason) cnt[r.reason] = (cnt[r.reason] || 0) + 1; else ok++; });
