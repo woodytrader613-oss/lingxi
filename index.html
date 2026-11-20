@@ -439,12 +439,12 @@ const DEMO = QS.get('demo') === '1';
 const D3 = QS.has('demo3');   // DEMO3：DEMO2 ＋ 年度配置改占比（%）、退休條件用詞調整
 const D2 = QS.has('demo2') || D3;
 const AN = D3 ? '年度標的配置' : '年度配置';
-const SN = D3 ? '每月執行建議' : '建議實踐';   // DEMO3 改稱「年度標的配置」
+const SN = D3 ? '何時領息' : '建議實踐';
+const WT = false;   // 占比（%）配置已停用：DEMO3 的年度標的配置改回 DEMO2 的月份配置   // DEMO3 改稱「年度標的配置」
 function demo3Labels() {
   $('d3Trace').hidden = false; $('traceLink').hidden = false;
   document.querySelector('label[for=goalX]').innerHTML = `每月現金流目標<small>${goal.inf > 0 ? '以今天的物價計，退休時會依通膨調高' : '不考慮通膨'}</small>`;
   document.querySelector('label[for=stockZ]').innerHTML = '目前可投入的資產<small>股票市值加現金，假設全部換成上面的配置</small>';
-  $('gridNote').textContent = '選要配置的 ETF，填上各自的占比（%）。';
 }
 function demo2Titles() { if (!D2) return; if (D3) demo3Labels(); $('ttl2').textContent = AN; $('tag2').textContent = D3 ? '用戶自行配置' : '用戶隨意配置'; if (D3) $('ttl1').textContent = '資金投入計畫'; $('ttl3').textContent = SN; $('tag3').textContent = '建議的正式執行計畫'; if (D3) $('tag3').hidden = true; }   // DEMO2：建議實踐不排除任何 ETF，版面只列一組預估與彙整
 if (EMBED_MODE) {
@@ -507,7 +507,7 @@ function forecastPlan(plan, method, d) {
   const A = plan.amount, rows = [], byCode = {}, skipped = [];
   let total = 0, totalX = 0, sumX = 0, sumY = 0;
   const noX = [];
-  if (D3) {
+  if (WT) {
     const W = planWeights();
     W.codes.forEach(code => {
       const r = metricsOf(code, method, d), inv = 12 * A * W.w[code];
@@ -605,7 +605,7 @@ function decodePlan(s) {
   return out;
 }
 function save() {
-  if (D3) {
+  if (WT) {
     try { localStorage.setItem('lingxi_plan_v3d3', JSON.stringify({ plan: { amount: plan.amount, w: plan.w }, goal })); } catch (e) {}
     postToApp({ type: 'plan', plan: String(Math.round(plan.amount)), weights: plan.w, x: goal.x, z: goal.z, inf: goal.inf });
     return;
@@ -615,7 +615,7 @@ function save() {
 }
 function load() {
   let src = '';
-  if (D3) {
+  if (WT) {
     try {
       const s3 = JSON.parse(localStorage.getItem('lingxi_plan_v3d3') || 'null');
       if (s3 && s3.plan && s3.plan.w) { plan.amount = +s3.plan.amount || 10000; plan.w = s3.plan.w; src = 'store'; }
@@ -652,7 +652,7 @@ function load() {
 
 function colorMap() {
   const map = {}; let i = 0;
-  if (D3) { Object.keys(plan.w || {}).forEach(c => { map[c] = PALETTE[i++ % PALETTE.length]; }); return map; }
+  if (WT) { Object.keys(plan.w || {}).forEach(c => { map[c] = PALETTE[i++ % PALETTE.length]; }); return map; }
   for (let m = 1; m <= 12; m++) { const c = plan.months[m]; if (c && !(c in map)) map[c] = PALETTE[i++ % PALETTE.length]; }
   return map;
 }
@@ -697,7 +697,7 @@ function render(keepList) {
   const r = forecastPlan(plan, method, DB);
   const col = colorMap();
   const nowM = TODAY.getMonth() + 1;
-  if (D3) { if (keepList) updateWeights(); else renderWeights(col); }
+  if (WT) { if (keepList) updateWeights(); else renderWeights(col); }
   else {
   $('grid').innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
     const code = plan.months[m];
@@ -751,7 +751,7 @@ function exMonthsInfo(code) {
 let SUG = null;
 function suggestPlan(pl, method, d) {
   const A = pl.amount, cnt = {}; let K = 0;
-  if (D3) { const W = planWeights(); W.codes.forEach(c => { cnt[c] = W.w[c]; }); K = 12; }
+  if (WT) { const W = planWeights(); W.codes.forEach(c => { cnt[c] = W.w[c]; }); K = 12; }
   else for (let m = 1; m <= 12; m++) { const c = pl.months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
   const inc = [], dropped = [];
   Object.keys(cnt).forEach(c => {
@@ -776,6 +776,15 @@ function renderSuggest() {
   const col = colorMap(), buy = {};
   for (let m = 1; m <= 12; m++) buy[m] = [];
   SUG.groups.forEach(g => g.exm.forEach(x => buy[(x + 10) % 12 + 1].push(g)));
+  if (D3) {   // 何時領息：每檔 ETF 放到它的除息月份，只提醒月份，不顯示金額
+    const own = {};
+    for (let m = 1; m <= 12; m++) own[m] = [];
+    SUG.groups.filter(g => !g.noEx).forEach(g => g.exm.forEach(x => own[x].push(g)));
+    $('sugGrid').innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+      const body = own[m].length ? own[m].map(g => `<div class="pick" style="--c:${col[g.code]}"><b>${esc(g.code)}</b><span>${esc(NAMES[g.code] || '')}</span></div>`).join('') : '<span class="none">—</span>';
+      return `<div class="card sugcard"><div class="mh"><b>${m} 月</b></div>${body}</div>`;
+    }).join('');
+  } else
   $('sugGrid').innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
     const tot = buy[m].reduce((t, g) => t + g.per, 0);
     const body = buy[m].length ? buy[m].map(g => `<div class="pick" style="--c:${col[g.code]}"><b>${esc(g.code)}</b><span>${esc(NAMES[g.code] || '')}</span><em>$${fmt0(g.per)}</em></div>`).join('') : '<span class="none">—</span>';
@@ -783,7 +792,7 @@ function renderSuggest() {
   }).join('');
   if (!SUG.k) {
     $('sugResult').innerHTML = '';
-    $('sugNote').textContent = (D3 ? planWeights().codes.length : Object.keys(plan.months).some(m => plan.months[m])) ? AN + '中沒有可以領息的標的，這裡無法產生' + SN + '。' : '先在上方設定' + AN + '，這裡就會產生' + SN + '的月份。';
+    $('sugNote').textContent = (WT ? planWeights().codes.length : Object.keys(plan.months).some(m => plan.months[m])) ? AN + '中沒有可以領息的標的，這裡無法產生' + SN + '。' : '先在上方設定' + AN + '，這裡就會產生' + SN + '的月份。';
     return;
   }
   $('sugResult').innerHTML = `<div class="kpis" style="margin-top:10px">
@@ -792,6 +801,7 @@ function renderSuggest() {
   setSugNote();
 }
 function setSugNote() {
+  if (D3) { $('sugNote').textContent = `${AN}的每檔 ETF，放在它的除息月份，提醒你哪個月會領息（不含金額）。` + (SUG && SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，不放入月份。` : ''); return; }
   const dr = SUG && SUG.D2 ? (SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，平均分到 12 個月買進。` : '')
     : SUG && SUG.dropped.length ? `${SUG.dropped.map(g => g.code).join('、')} 沒有可領的配息，已剔除，預算分給其他標的。` : '';
   const src = D2 ? AN : '方案一';
@@ -809,44 +819,41 @@ function daysText(d) {
 }
 function renderD3Trace(r) {
   const box = $('d3TraceBody'); if (!box) return;
-  const W = planWeights(), A = plan.amount, X = goal.x, Z = goal.z, inf = goal.inf / 100;
-  if (!W.codes.length) { box.innerHTML = '<p class="note">先在上面配置 ETF，這裡就會顯示用你的數字算出結果的過程。</p>'; return; }
-  const p2 = x => (x * 100).toFixed(2) + '%', p1 = x => fmtPct1(x) + '%';
+  const A = plan.amount, X = goal.x, Z = goal.z, inf = goal.inf / 100;
+  const cnt = {}; let K = 0;
+  for (let m = 1; m <= 12; m++) { const c = plan.months[m]; if (c) { cnt[c] = (cnt[c] || 0) + 1; K++; } }
+  if (!K) { box.innerHTML = '<p class="note">先在上面配置 ETF，這裡就會顯示用你的數字算出結果的過程。</p>'; return; }
+  const p2 = x => (x * 100).toFixed(2) + '%';
   let h = '';
   // 一、條件
   h += `<h3>一、你輸入的條件</h3><div class="tbl-wrap"><table class="doc sm"><tbody>
     <tr><td>每月配置金額 A</td><td class="num">$${fmt0(A)}</td></tr>
-    <tr><td>全年預算</td><td class="num">${fmt0(A)} × 12 = $${fmt0(A * 12)}</td></tr>
+    <tr><td>已配置的月份數</td><td class="num">${K} 個月</td></tr>
+    <tr><td>全年投入</td><td class="num">${fmt0(A)} × ${K} = $${fmt0(A * K)}</td></tr>
     <tr><td>每月現金流目標 X</td><td class="num">$${fmt0(X)}</td></tr>
     <tr><td>目前可投入的資產 Z</td><td class="num">$${fmt0(Z)}</td></tr>
     <tr><td>通膨率 i</td><td class="num">${goal.inf > 0 ? goal.inf + '%／年' : '不考慮'}</td></tr></tbody></table></div>`;
   // 二、配置
-  const rows = Object.keys(plan.w).filter(c => plan.w[c] > 0).map(c => {
-    const mt = metricsOf(c, method, DB), inv = 12 * A * W.w[c];
-    return `<tr><td><b>${esc(c)}</b><br><small>${esc(NAMES[c] || '')}</small></td><td class="num">${p1(plan.w[c])}</td><td class="num">${p1(W.w[c] * 100)}</td><td class="num">${fmt0(inv)}</td>${mt.reason ? `<td colspan="2">${esc(mt.reason)}，不列入</td>` : `<td class="num">${mt.x == null ? '未滿 1 年，不計' : p2(mt.x)}</td><td class="num">${p2(mt.y)}</td>`}</tr>`;
+  const rows = Object.keys(cnt).map(c => {
+    const mt = metricsOf(c, method, DB);
+    return `<tr><td><b>${esc(c)}</b><br><small>${esc(NAMES[c] || '')}</small></td><td class="num">${cnt[c]}</td><td class="num">${fmt0(A * cnt[c])}</td>${mt.reason ? `<td colspan="2">${esc(mt.reason)}，不列入</td>` : `<td class="num">${mt.x == null ? '未滿 1 年，不計' : p2(mt.x)}</td><td class="num">${p2(mt.y)}</td>`}</tr>`;
   }).join('');
   h += `<h3>二、各檔的投入金額、報酬率、殖利率</h3>
-    <div class="formula">換算占比 = 你輸入的占比 ÷ 所有占比合計（合計 ${p1(W.raw)}）
-全年投入 = 全年預算 × 換算占比
+    <div class="formula">全年投入 = 每月配置金額 × 該檔被選的月份數
 年化報酬率：還原股價的年化報酬（已含配息）；殖利率：${METHOD_NAME[method]}</div>
-    <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>輸入占比</th><th>換算占比</th><th>全年投入</th><th>年化報酬率</th><th>殖利率</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>月份數</th><th>全年投入</th><th>年化報酬率</th><th>殖利率</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   // 三、M、N
   if (r.k) {
     const gx = r.groups.filter(g => g.x != null);
     h += `<h3>三、預估報酬率 M、預估殖利率 N</h3><div class="formula">M = (${gx.map(g => `${fmt0(g.invest)} × ${p2(g.x)}`).join(' + ') || '—'}) ÷ ${fmt0(r.totalX)} = <em>${pct(r.M, true)}</em>${r.noX.length ? `\n（${r.noX.join('、')} 上市未滿 1 年，不計入 M）` : ''}
 N = (${r.groups.map(g => `${fmt0(g.invest)} × ${p2(g.y)}`).join(' + ')}) ÷ ${fmt0(r.total)} = <em>${pct(r.N)}</em></div>`;
   }
-  // 四、建議實踐
+  // 四、何時領息
   if (SUG && SUG.groups.length) {
-    const sr = SUG.groups.map(g => {
-      const buy = [...new Set(g.exm.map(x => (x + 10) % 12 + 1))].sort((a, b) => a - b);
-      return `<tr><td><b>${esc(g.code)}</b></td><td>${g.noEx ? '無除息紀錄' : g.exm.join('、') + ' 月'}<br><small>${esc(g.src || '')}</small></td><td>${g.noEx ? '12 個月平均' : buy.join('、') + ' 月'}</td><td class="num">${fmt0(g.per)}</td></tr>`;
-    }).join('');
-    h += `<h3>四、${SN}的買進月份與金額</h3><div class="formula">買進月份 = 除息月份的前一個月；沒有除息紀錄的，平均分到 12 個月
-每次買進金額 = 該檔全年投入 ÷ 買進月份數</div>
-    <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>除息月份</th><th>買進月份</th><th>每次買進</th></tr></thead><tbody>${sr}</tbody></table></div>
-    <p class="note">除息月份：上市 ETF 依證交所 ETF e添富「配息行事曆」；上櫃 ETF 依官方近 400 天的除息紀錄。</p>
-    <p class="note">${SN}沿用${AN}的全部標的與占比，只是改在除息前一個月買進，所以預估報酬率與殖利率和上面相同。</p>`;
+    const sr = SUG.groups.map(g => `<tr><td><b>${esc(g.code)}</b></td><td>${g.noEx ? '無除息紀錄' : g.exm.join('、') + ' 月'}</td><td>${esc(g.src || '')}</td></tr>`).join('');
+    h += `<h3>四、何時領息</h3><div class="formula">每檔 ETF 放在它的除息月份，只提醒哪個月會領息，不計算金額</div>
+    <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>除息月份</th><th>資料來源</th></tr></thead><tbody>${sr}</tbody></table></div>
+    <p class="note">上市 ETF 依證交所 ETF e添富「配息行事曆」；上櫃 ETF 依官方近 400 天的除息紀錄。</p>`;
   }
   // 五、退休
   h += '<h3>五、可以退休的日期</h3>';
@@ -917,7 +924,7 @@ function renderRetire(r) {
 /* ===== DEMO：計算方式與範例 ===== */
 function exCodes() {
   const list = [];
-  if (D3) planWeights().codes.forEach(c => { if (!metricsOf(c, method, DB).reason) list.push(c); });
+  if (WT) planWeights().codes.forEach(c => { if (!metricsOf(c, method, DB).reason) list.push(c); });
   else for (let m = 1; m <= 12; m++) { const c = plan.months[m]; if (c && !list.includes(c) && !metricsOf(c, method, DB).reason) list.push(c); }
   QUICK.forEach(c => { if (!list.includes(c) && FC[c] && !metricsOf(c, method, DB).reason) list.push(c); });
   return list;
@@ -982,7 +989,7 @@ $('exCode').addEventListener('change', renderDemoEx);
 /* ===== 月份設定（只選 ETF）===== */
 let editM = null, draftCode = null;
 function openSheet(m) {
-  if (D3) {
+  if (WT) {
     editM = 'add'; draftCode = null;
     $('sheetTitle').textContent = '新增 ETF'; $('search').value = ''; $('fillWrap').hidden = true; $('sheetClear').hidden = true; $('sheetOk').textContent = '加入';
     renderPicker(); $('sheetBg').classList.add('show'); $('sheetBg').setAttribute('aria-hidden', 'false'); return;
@@ -1029,7 +1036,7 @@ function choose(code) {
   draftCode = code; $('search').value = ''; renderPicker();
 }
 $('sheetOk').onclick = () => {
-  if (D3) {
+  if (WT) {
     if (!draftCode) { closeSheet(); return; }
     if (draftCode in plan.w) { toast(`${draftCode} 已在配置中`); return; }
     const cs = Object.keys(plan.w), n = cs.length;
@@ -1079,7 +1086,7 @@ if (DEMO) {
   });
   $('swContrib').onclick = () => { includeA = !includeA; $('swContrib').setAttribute('aria-checked', includeA); render(); };
 }
-$('btnClear').onclick = () => { if (D3) { if (!Object.keys(plan.w).length) return; plan.w = {}; save(); render(); toast('已清除全部配置'); return; } if (!Object.keys(plan.months).length) return; plan.months = {}; save(); render(); toast('已清除全部月份'); };
+$('btnClear').onclick = () => { if (WT) { if (!Object.keys(plan.w).length) return; plan.w = {}; save(); render(); toast('已清除全部配置'); return; } if (!Object.keys(plan.months).length) return; plan.months = {}; save(); render(); toast('已清除全部月份'); };
 
 /* ===== 資料 ===== */
 function onData(d) {
