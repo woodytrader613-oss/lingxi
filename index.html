@@ -447,6 +447,8 @@ const WT = false;   // 占比（%）配置已停用：DEMO3 的年度標的配�
 function demo3Labels() {
   $('d3Trace').hidden = false; $('traceLink').hidden = false;
   if (D4) {
+    $('gridNote').textContent = '點月份卡片，選這個月要買的 ETF 或個股（每月一檔）。同一檔選幾個月，就占幾份比重。';
+    $('search').placeholder = '例：00919、2330、台積電';
     document.querySelector('label[for=goalX]').innerHTML = '每月現金流目標';
     document.querySelector('#retirePanel .sec-title span').textContent = '用股息cover每月開銷';
     document.querySelector('label[for=stockZ]').innerHTML = '目前資產<small>自行輸入，或帶入 APP 內的庫存市值</small>';
@@ -823,7 +825,7 @@ function renderSuggest() {
   setSugNote();
 }
 function setSugNote() {
-  if (D3) { $('sugNote').textContent = `${AN}的每檔 ETF，放在它發放股息的月份，提醒你哪個月會收到股息${D4 ? '' : '（不含金額）'}。` + (SUG && SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，不放入月份。` : ''); return; }
+  if (D3) { $('sugNote').textContent = `${AN}的每檔${D4 ? '標的' : ' ETF'}，放在它發放股息的月份，提醒你哪個月會收到股息${D4 ? '' : '（不含金額）'}。` + (SUG && SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，不放入月份。` : ''); return; }
   const dr = SUG && SUG.D2 ? (SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，平均分到 12 個月買進。` : '')
     : SUG && SUG.dropped.length ? `${SUG.dropped.map(g => g.code).join('、')} 沒有可領的配息，已剔除，預算分給其他標的。` : '';
   const src = D2 ? AN : '方案一';
@@ -876,10 +878,10 @@ N = (${r.groups.map(g => `${fmt0(g.invest)} × ${p2(g.y)}`).join(' + ')}) ÷ ${f
       const pay = g.noEx ? null : payMonthsOf(g.code, g.exm), pm = pay ? [...new Set(Object.values(pay))].sort((a, b) => a - b) : [];
       return `<tr><td><b>${esc(g.code)}</b></td><td>${g.noEx ? '無除息紀錄' : g.exm.join('、') + ' 月'}<br><small>${esc(g.src || '')}</small></td><td>${pm.length ? pm.join('、') + ' 月' : '—'}</td></tr>`;
     }).join('');
-    h += `<h3>四、何時領息</h3><div class="formula">每檔 ETF 放在它發放股息的月份，只提醒哪個月會收到股息，不計算金額
-發放月份 = 官方配息紀錄中，該除息月對應的發放日所在月份；沒有紀錄時，用這檔 ETF 平均的「除息到發放」間隔推算</div>
+    h += `<h3>四、何時領息</h3><div class="formula">每檔${D4 ? '標的' : ' ETF'}放在它發放股息的月份，只提醒哪個月會收到股息，不計算金額
+發放月份 = 官方配息紀錄中，該除息月對應的發放日所在月份；沒有紀錄時，用這檔平均的「除息到發放」間隔推算</div>
     <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>除息月份</th><th>發放股息月份</th></tr></thead><tbody>${sr}</tbody></table></div>
-    <p class="note">除息月份：上市 ETF 依證交所 ETF e添富「配息行事曆」；上櫃 ETF 依官方近 400 天的除息紀錄。</p>`;
+    <p class="note">除息月份：上市 ETF 依證交所 ETF e添富「配息行事曆」；上櫃 ETF 與個股依官方近 400 天的除息紀錄。</p>`;
   }
   // 五、退休
   h += '<h3>五、可以退休的日期</h3>';
@@ -1021,7 +1023,7 @@ function openSheet(m) {
     renderPicker(); $('sheetBg').classList.add('show'); $('sheetBg').setAttribute('aria-hidden', 'false'); return;
   }
   editM = m; draftCode = plan.months[m] || null;
-  $('sheetTitle').textContent = `${m} 月要買的 ETF`;
+  $('sheetTitle').textContent = (D4 ? `${m} 月要買的 ETF／個股` : `${m} 月要買的 ETF`);
   $('search').value = '';
   $('fillEmpty').checked = false;
   let empties = 0;
@@ -1046,7 +1048,7 @@ function renderPicker() {
     const hits = Object.keys(FC).filter(c => c.toLowerCase().includes(q) || (NAMES[c] || '').toLowerCase().includes(q))
       .sort((a, b) => (bad(a) - bad(b)) || (a < b ? -1 : 1)).slice(0, 30);
     box.innerHTML = hits.length ? hits.map(c => `<button type="button" class="res" data-c="${esc(c)}" aria-pressed="${draftCode === c}" ${bad(c) ? 'aria-disabled="true"' : ''}><b>${esc(c)}</b><span>${esc(NAMES[c] || '')}</span><small>${esc(tagOf(c))}</small></button>`).join('')
-      : '<div class="note">找不到符合的 ETF</div>';
+      : (D4 ? '<div class="note">找不到符合的 ETF 或個股</div>' : '<div class="note">找不到符合的 ETF</div>');
     box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => choose(b.dataset.c));
   } else box.innerHTML = '';
   const r = draftCode ? metricsOf(draftCode, method, DB) : null;
@@ -1138,8 +1140,43 @@ function onData(d) {
   const nYoung = Object.values(FC).filter(f => f.exclude === '上市未滿 1 年').length, nLev = Object.values(FC).filter(f => f.exclude === '槓桿型或反向型').length;
   $('excludeCount').textContent = `目前資料庫共 ${Object.keys(FC).length} 檔 ETF，可選 ${ok} 檔（含槓桿型／反向型 ${nLev} 檔、上市未滿 1 年 ${nYoung} 檔），不予計算 ${Object.keys(FC).length - ok} 檔${Object.keys(cnt).length ? `（${Object.entries(cnt).map(([k, v]) => `${k} ${v} 檔`).join('、')}）` : ''}。`;
   render();
+  if (D4) loadStocks();
   hideLoader();
   postToApp({ type: 'ready', title: '領息大地圖', base: d.base });
+}
+/* DEMO4：個股（上市＋上櫃普通股）。股息預估（保守預估）、名稱、配息日期來自「個股配息上傳」/exec；
+   年化報酬率、最新收盤、除息月份來自 stock_ret.json（build_stock_ret.py 產生，放在網站根目錄）。兩個都讀得到才開放個股。 */
+const STOCK_URL = 'https://script.google.com/macros/s/AKfycbyLWNvrA-aBZscUEcS48o1ItUmZoHEnl8IovlhARDmiS9JxDfpv3qsew3bWjkWlsUOT0Q/exec';
+function mergeStocks(sd, rd) {
+  if (!sd || !sd.est || !rd || !rd.x) return 0;
+  DB.est = DB.est || {}; DB.prices = DB.prices || {}; DB.exMonths = DB.exMonths || {}; DB.events = DB.events || {};
+  let n = 0;
+  Object.keys(rd.x).forEach(c => {
+    if (FC[c]) return;                                   // 不蓋掉 ETF
+    const v = rd.x[c], pn = v[2];
+    if (!(pn > 0)) return;
+    FC[c] = { cagr: v[0], cagrFrom: v[3], cagrTo: rd.base, stock: true };
+    if (v[0] == null) FC[c].exclude = '上市未滿 1 年';
+    if ((rd.bad || []).includes(c)) FC[c].exclude = '缺少還原價資料';   // 月 K 與日 K 還原尺度對不上，報酬率不可靠
+    NAMES[c] = (sd.sec && sd.sec[c]) || c;
+    DB.prices[c] = { pn };
+    if (sd.est[c]) DB.est[c] = sd.est[c];
+    if (rd.ex && rd.ex[c]) DB.exMonths[c] = rd.ex[c];
+    n++;
+  });
+  (sd.ev || []).forEach(r => {
+    const c = r[0];
+    if (!FC[c] || !FC[c].stock || !r[1]) return;
+    (DB.events[c] = DB.events[c] || []).push({ ex: r[1], pay: r[2] || null, dps: r[3] });
+  });
+  return n;
+}
+function loadStocks() {
+  const j = u => fetch(u, { cache: 'no-store' }).then(r => r.text()).then(t => JSON.parse(t.trim()));
+  Promise.all([j(STOCK_URL + '?format=json'), j('stock_ret.json')]).then(([sd, rd]) => {
+    const n = mergeStocks(sd, rd);
+    if (n) { renderPicker(); render(); }
+  }).catch(() => {});   // 讀不到就維持只有 ETF
 }
 function onFail(e) {
   $('result').innerHTML = `<div class="empty">讀取資料失敗：${esc(e && e.message ? e.message : e)}</div>`;
