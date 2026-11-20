@@ -292,6 +292,7 @@ table.doc.sm{min-width:0}
               <label for="stockZ">目前股票庫存市值<small>假設全數換成上面的配置</small></label>
               <span class="inbox"><input id="stockZ" inputmode="numeric" autocomplete="off"> 元</span>
             </div>
+            <div class="btnrow" id="zBtnRow" style="display:none;margin-top:8px"><button type="button" class="btn ghost" id="btnZ">帶入 APP 內的庫存市值</button></div>
             <div class="inrow">
               <label for="inflation">通膨率<small>每年；0 表示不考慮</small></label>
               <span class="inbox"><input id="inflation" class="sm" inputmode="decimal" autocomplete="off"> %</span>
@@ -436,13 +437,19 @@ N = Σ(各月投入 × 該月標的預估殖利率) ÷ 年度總投入
 const QS = new URLSearchParams(location.search);
 const EMBED_MODE = QS.get('embed') === '1';
 const DEMO = QS.get('demo') === '1';
-const D3 = QS.has('demo3');   // DEMO3：DEMO2 ＋ 年度配置改占比（%）、退休條件用詞調整
+const D4 = QS.has('demo4');   // DEMO4：DEMO3 ＋ 目前資產可帶入 APP 庫存／自行輸入、拿掉通膨
+const D3 = QS.has('demo3') || D4;   // DEMO3：DEMO2 ＋ 年度配置改占比（%）、退休條件用詞調整
 const D2 = QS.has('demo2') || D3;
 const AN = D3 ? '年度標的配置' : '年度配置';
 const SN = D3 ? '何時領息' : '建議實踐';
 const WT = false;   // 占比（%）配置已停用：DEMO3 的年度標的配置改回 DEMO2 的月份配置   // DEMO3 改稱「年度標的配置」
 function demo3Labels() {
   $('d3Trace').hidden = false; $('traceLink').hidden = false;
+  if (D4) {
+    document.querySelector('label[for=goalX]').innerHTML = '每月現金流目標<small>不考慮通膨，可自行調高</small>';
+    document.querySelector('label[for=stockZ]').innerHTML = '目前資產<small>自行輸入，或帶入 APP 內的庫存市值</small>';
+    return;
+  }
   document.querySelector('label[for=goalX]').innerHTML = `每月現金流目標<small>${goal.inf > 0 ? '以今天的物價計，退休時會依通膨調高' : '不考慮通膨'}</small>`;
   document.querySelector('label[for=stockZ]').innerHTML = '目前可投入的資產<small>股票市值加現金，假設全部換成上面的配置</small>';
 }
@@ -740,6 +747,19 @@ function exMonthsOf(code) {
   [...((DB.events || {})[code] || []), ...((DB.prevEvents || {})[code] || [])].forEach(e => { if (e && e.ex && e.ex >= limS) set.add(+e.ex.slice(5, 7)); });
   return [...set].sort((a, b) => a - b);
 }
+// 發放股息的月份：每個除息月 → 發放月，依官方近 400 天的配息紀錄（有 pay 日期）；該除息月沒有紀錄時，用這檔 ETF 平均「除息到發放」相隔的月數推算
+function payMonthsOf(code, exm) {
+  const lim = new Date(TODAY.getTime() - 400 * 86400000), limS = lim.getFullYear() + '-' + String(lim.getMonth() + 1).padStart(2, '0') + '-' + String(lim.getDate()).padStart(2, '0');
+  const map = {}, lags = [];
+  [...((DB && DB.events || {})[code] || []), ...((DB && DB.prevEvents || {})[code] || [])]
+    .filter(e => e && e.ex && e.pay && e.ex >= limS).sort((a, b) => a.ex < b.ex ? -1 : 1)
+    .forEach(e => { const x = +e.ex.slice(5, 7), y = +e.pay.slice(5, 7); map[x] = y; lags.push((y - x + 12) % 12); });
+  lags.sort((a, b) => a - b);
+  const lag = lags.length ? lags[Math.floor(lags.length / 2)] : 1;
+  const out = {};
+  exm.forEach(x => { out[x] = map[x] || ((x - 1 + lag) % 12) + 1; });
+  return out;
+}
 // 除息月份來源：DEMO3 上市 ETF 優先用證交所 ETF e添富「配息行事曆」；其餘（上櫃等）用官方近 400 天除息紀錄
 function exMonthsInfo(code) {
   if (D3 && DB && DB.twseMonths && DB.twseMonths[code] && DB.twseMonths[code].length) return { months: DB.twseMonths[code], src: '證交所行事曆' };
@@ -776,10 +796,10 @@ function renderSuggest() {
   const col = colorMap(), buy = {};
   for (let m = 1; m <= 12; m++) buy[m] = [];
   SUG.groups.forEach(g => g.exm.forEach(x => buy[(x + 10) % 12 + 1].push(g)));
-  if (D3) {   // 何時領息：每檔 ETF 放到它的除息月份，只提醒月份，不顯示金額
+  if (D3) {   // 何時領息：每檔 ETF 放到它發放股息的月份，只提醒月份，不顯示金額
     const own = {};
     for (let m = 1; m <= 12; m++) own[m] = [];
-    SUG.groups.filter(g => !g.noEx).forEach(g => g.exm.forEach(x => own[x].push(g)));
+    SUG.groups.filter(g => !g.noEx).forEach(g => { g.pay = payMonthsOf(g.code, g.exm); [...new Set(Object.values(g.pay))].forEach(y => own[y].push(g)); });
     $('sugGrid').innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
       const body = own[m].length ? own[m].map(g => `<div class="pick" style="--c:${col[g.code]}"><b>${esc(g.code)}</b><span>${esc(NAMES[g.code] || '')}</span></div>`).join('') : '<span class="none">—</span>';
       return `<div class="card sugcard"><div class="mh"><b>${m} 月</b></div>${body}</div>`;
@@ -801,7 +821,7 @@ function renderSuggest() {
   setSugNote();
 }
 function setSugNote() {
-  if (D3) { $('sugNote').textContent = `${AN}的每檔 ETF，放在它的除息月份，提醒你哪個月會領息（不含金額）。` + (SUG && SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，不放入月份。` : ''); return; }
+  if (D3) { $('sugNote').textContent = `${AN}的每檔 ETF，放在它發放股息的月份，提醒你哪個月會收到股息（不含金額）。` + (SUG && SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，不放入月份。` : ''); return; }
   const dr = SUG && SUG.D2 ? (SUG.noEx.length ? `${SUG.noEx.join('、')} 沒有除息紀錄，平均分到 12 個月買進。` : '')
     : SUG && SUG.dropped.length ? `${SUG.dropped.map(g => g.code).join('、')} 沒有可領的配息，已剔除，預算分給其他標的。` : '';
   const src = D2 ? AN : '方案一';
@@ -831,8 +851,8 @@ function renderD3Trace(r) {
     <tr><td>已配置的月份數</td><td class="num">${K} 個月</td></tr>
     <tr><td>全年投入</td><td class="num">${fmt0(A)} × ${K} = $${fmt0(A * K)}</td></tr>
     <tr><td>每月現金流目標 X</td><td class="num">$${fmt0(X)}</td></tr>
-    <tr><td>目前可投入的資產 Z</td><td class="num">$${fmt0(Z)}</td></tr>
-    <tr><td>通膨率 i</td><td class="num">${goal.inf > 0 ? goal.inf + '%／年' : '不考慮'}</td></tr></tbody></table></div>`;
+    <tr><td>${D4 ? '目前資產 Z' : '目前可投入的資產 Z'}</td><td class="num">$${fmt0(Z)}</td></tr>
+    ${D4 ? '' : `<tr><td>通膨率 i</td><td class="num">${goal.inf > 0 ? goal.inf + '%／年' : '不考慮'}</td></tr>`}</tbody></table></div>`;
   // 二、配置
   const rows = Object.keys(cnt).map(c => {
     const mt = metricsOf(c, method, DB);
@@ -850,10 +870,14 @@ N = (${r.groups.map(g => `${fmt0(g.invest)} × ${p2(g.y)}`).join(' + ')}) ÷ ${f
   }
   // 四、何時領息
   if (SUG && SUG.groups.length) {
-    const sr = SUG.groups.map(g => `<tr><td><b>${esc(g.code)}</b></td><td>${g.noEx ? '無除息紀錄' : g.exm.join('、') + ' 月'}</td><td>${esc(g.src || '')}</td></tr>`).join('');
-    h += `<h3>四、何時領息</h3><div class="formula">每檔 ETF 放在它的除息月份，只提醒哪個月會領息，不計算金額</div>
-    <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>除息月份</th><th>資料來源</th></tr></thead><tbody>${sr}</tbody></table></div>
-    <p class="note">上市 ETF 依證交所 ETF e添富「配息行事曆」；上櫃 ETF 依官方近 400 天的除息紀錄。</p>`;
+    const sr = SUG.groups.map(g => {
+      const pay = g.noEx ? null : payMonthsOf(g.code, g.exm), pm = pay ? [...new Set(Object.values(pay))].sort((a, b) => a - b) : [];
+      return `<tr><td><b>${esc(g.code)}</b></td><td>${g.noEx ? '無除息紀錄' : g.exm.join('、') + ' 月'}<br><small>${esc(g.src || '')}</small></td><td>${pm.length ? pm.join('、') + ' 月' : '—'}</td></tr>`;
+    }).join('');
+    h += `<h3>四、何時領息</h3><div class="formula">每檔 ETF 放在它發放股息的月份，只提醒哪個月會收到股息，不計算金額
+發放月份 = 官方配息紀錄中，該除息月對應的發放日所在月份；沒有紀錄時，用這檔 ETF 平均的「除息到發放」間隔推算</div>
+    <div class="tbl-wrap"><table class="doc sm"><thead><tr><th>標的</th><th>除息月份</th><th>發放股息月份</th></tr></thead><tbody>${sr}</tbody></table></div>
+    <p class="note">除息月份：上市 ETF 依證交所 ETF e添富「配息行事曆」；上櫃 ETF 依官方近 400 天的除息紀錄。</p>`;
   }
   // 五、退休
   h += '<h3>五、可以退休的日期</h3>';
@@ -865,7 +889,7 @@ N = (${r.groups.map(g => `${fmt0(g.invest)} × ${p2(g.y)}`).join(' + ')}) ÷ ${f
     h += `<div class="formula">目標資產（以今天物價計）Y = 每月現金流目標 X × 12 ÷ 殖利率 N = ${fmt0(X)} × 12 ÷ ${p2(r.N)} = <em>$${fmt0(Y0)}</em>
 月利率 = (1 + M)^(1/12) − 1 = (1 + ${p2(r.M)})^(1/12) − 1 = ${(rm * 100).toFixed(4)}%
 每月底：資產 = 上月資產 × (1 + 月利率)${includeA ? ` + 每月投入 ${fmt0(A)}` : ''}
-${inf > 0 ? `含通膨的目標資產：第 t 個月 = Y × (1 + ${goal.inf}%)^(t ÷ 12)（物價每年漲 ${goal.inf}%，目標跟著提高）` : '不考慮通膨，目標資產固定為 Y'}
+${inf > 0 ? `含通膨的目標資產：第 t 個月 = Y × (1 + ${goal.inf}%)^(t ÷ 12)（物價每年漲 ${goal.inf}%，目標跟著提高）` : (D4 ? '目標資產固定為 Y（不考慮通膨，可自行調高每月現金流目標）' : '不考慮通膨，目標資產固定為 Y')}
 你的資產第一次 ≥ 目標資產的那一天，就是可以退休的日期</div>`;
     if (res.status === 'done') h += `<p class="note">目前可投入的資產 $${fmt0(Z)} 已經 ≥ Y $${fmt0(Y0)}，現在就可以退休。</p>`;
     else if (res.status === 'ok') {
@@ -1072,6 +1096,14 @@ function initInputs() {
   bindMoney('goalX', () => goal.x, v => { goal.x = v; });
   bindMoney('stockZ', () => goal.z, v => { goal.z = v; });
   const inf = $('inflation');
+  if (D4) {
+    goal.inf = 0; inf.closest('.inrow').style.display = 'none';
+    $('zBtnRow').style.display = '';
+    $('btnZ').onclick = () => {   // 示意：實際會由 APP 帶入用戶庫存市值，這裡先隨機產生 100～500 萬
+      goal.z = (100 + Math.floor(Math.random() * 401)) * 10000;
+      $('stockZ').value = fmt0(goal.z); save(); render();
+    };
+  }
   inf.value = String(goal.inf);
   inf.addEventListener('input', () => { goal.inf = Math.min(20, num(inf.value)); save(); render(); });
   inf.addEventListener('blur', () => { inf.value = String(goal.inf); });
