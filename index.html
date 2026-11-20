@@ -714,7 +714,7 @@ function render(keepList) {
     const code = plan.months[m];
     const mt = code ? metricsOf(code, method, DB) : null;
     let body;
-    if (!code) body = '<span class="addhint">＋ 選 ETF</span>';
+    if (!code) body = (D4 ? '<span class="addhint">＋ 選標的</span>' : '<span class="addhint">＋ 選 ETF</span>');
     else if (mt.reason) body = `<div class="pick bad"><b>${esc(code)}</b><span>${esc(mt.reason)}</span><em>不列入計算</em></div>`;
     else body = `<div class="pick" style="--c:${col[code]}"><b>${esc(code)}</b><span>${esc(NAMES[code] || '')}</span>${D4 ? '' : `<em>$${fmt0(plan.amount)}</em>`}${mt.young ? '<span class="tiny">未滿 1 年・不計報酬率</span>' : ''}</div>`;
     return `<button type="button" class="card" data-m="${m}" aria-label="${m} 月${code ? '，' + code : '，尚未設定'}"><div class="mh"><b>${m} 月</b>${m === nowM && !D4 ? '<span class="badge">本月</span>' : ''}</div>${body}</button>`;
