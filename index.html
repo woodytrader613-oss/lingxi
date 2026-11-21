@@ -913,10 +913,41 @@ ${inf > 0 ? `含通膨的目標資產：第 t 個月 = Y × (1 + ${goal.inf}%)^(
       h += `<div class="tbl-wrap"><table class="doc sm"><thead><tr><th>時間點</th><th>資產</th><th>${inf > 0 ? '目標資產（含通膨）' : TA}</th><th>差距</th></tr></thead><tbody>${tr.join('')}</tbody></table></div>
       <div class="formula">第 ${res.months} 個月（從今天起第 ${yrs ? yrs + ' 年 ' : ''}${mo} 個月內）資產第一次 ≥ ${TA}
 當月內依複利曲線推算到哪一天達標 → <em>${fmtDate(res.date)}</em>（還要約 ${res.R.toFixed(1)} 年）${inf > 0 ? `\n退休時每月需要 = ${fmt0(X)} × (1 + ${goal.inf}%)^${res.R.toFixed(2)} = <em>$${fmt0(X * Math.pow(1 + inf, res.R))}</em>` : ''}</div>`;
+      if (D4) h += monthDetailHtml(res, Z, rm, Y0, inf, includeA ? A : 0);
     } else h += `<p class="note">${esc(res.msg)}</p>`;
   }
   if (D4) h += calcDetailHtml(Object.keys(cnt));
   box.innerHTML = h;
+}
+// 2026-11-22 DEMO4：「當月內用複利曲線推算」的詳細步驟（與 retirePlan 同一套算法，逐步列出數字）
+function monthDetailHtml(res, Z, rm, Y0, inf, add) {
+  const k = res.months; if (!(k >= 1)) return '';
+  const f0 = x => Math.round(x).toLocaleString('en-US'), p4 = x => (x * 100).toFixed(4) + '%';
+  let V = Z; for (let t = 1; t < k; t++) V = V * (1 + rm) + add;            // 第 k 個月月初的資產
+  const need = tm => Y0 * Math.pow(1 + inf, tm / 12);
+  const start = addMonths(TODAY, k - 1), end = addMonths(TODAY, k), dim = Math.round((end - start) / 86400000);
+  const Vmid = V * (1 + rm), tgt = need(k);
+  const ymd = d => `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+  let h = `<h3>當月內怎麼推算到哪一天</h3><div class="formula">為什麼要推算：資產是「每月月底」才結算一次，但實際上資產每天都在長。第 ${k} 個月的月底資產已經超過目標，所以達標那天就在這個月裡面，要再往前找到是哪一天。
+① 第 ${k} 個月月初（${ymd(start)}）資產 V = <em>${f0(V)}</em>　（現在的資產，逐月 × (1 + 月利率)${add ? ' + 每月投入' : ''} 滾到第 ${k - 1} 個月月底）
+② 這個月長度 = ${ymd(start)} → ${ymd(end)} = ${dim} 天；月利率 = ${p4(rm)}
+③ 假設這個月內資產依複利連續成長：第 f 個月（f 從 0 到 1）的資產 = V × (1 + 月利率)^f
+④ 目標：${f0(Y0)}${inf > 0 ? ` × (1 + ${goal.inf}%)^((${k - 1} + f) ÷ 12)（含通膨，目標隨時間升高）` : '（固定）'}
+⑤ 先看月底前不加投入、只靠複利夠不夠：V × (1 + 月利率) = ${f0(V)} × ${(1 + rm).toFixed(6)} = ${f0(Vmid)}　${Vmid >= tgt ? `≥ 目標 ${f0(tgt)}　→ 夠，月底之前就達標，往下找日期` : `< 目標 ${f0(tgt)}　→ 不夠，要等月底投入 ${f0(add)} 才超過，所以達標日 = 這個月的月底`}`;
+  if (Vmid >= tgt) {
+    const f = res.R * 365.2425 * 86400000;    // 僅為顯示：實際 f 由天數反推
+    const days = Math.round((res.date - start) / 86400000), ff = days / dim;
+    h += `
+⑥ 解 V × (1 + 月利率)^f = 目標，找出 f（${inf > 0 ? '含通膨，用二分法逐步逼近：每次取 0～1 的中點，資產 ≥ 目標就往前縮、否則往後縮，重複 60 次' : `不考慮通膨時可直接解：f = ln(目標 ÷ V) ÷ ln(1 + 月利率) = ln(${f0(Y0)} ÷ ${f0(V)}) ÷ ln(${(1 + rm).toFixed(6)}) = <em>${(Math.log(Y0 / V) / Math.log(1 + rm)).toFixed(4)}</em>`}）
+⑦ 換成天數 = 這個月 ${dim} 天 × f = ${dim} × ${(inf > 0 ? ff : Math.log(Y0 / V) / Math.log(1 + rm)).toFixed(4)} ≈ <em>${days} 天</em>（四捨五入）
+⑧ 達標日 = 月初 ${ymd(start)} + ${days} 天 = <em>${ymd(res.date)}</em>
+⑨ 距離今天 = (${ymd(res.date)} − ${ymd(TODAY)}) ÷ 365.2425 = <em>${res.R.toFixed(2)} 年</em>`;
+  } else {
+    h += `
+⑥ 達標日 = 第 ${k} 個月月底 = <em>${ymd(res.date)}</em>
+⑦ 距離今天 = (${ymd(res.date)} − ${ymd(TODAY)}) ÷ 365.2425 = <em>${res.R.toFixed(2)} 年</em>`;
+  }
+  return h + '</div>';
 }
 // 2026-11-21 DEMO4：六、每一檔的年化報酬率、年化殖利率是怎麼算出來的（資料在資料庫：forecast.cagrP0/P1、calc、stock_calc.json）
 function calcDetailHtml(codes) {
