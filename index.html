@@ -185,6 +185,9 @@ a{color:var(--accent)}
 .explain .lead{font-size:16px;color:var(--ink)}
 .formula{margin:10px 0;padding:14px 16px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;line-height:1.8;color:var(--ink);overflow-x:auto;white-space:pre}
 .formula em{font-style:normal;color:var(--accent)}
+/* DEMO4 算式明細 */
+.calc-one{border:1px solid var(--line,#e5e7eb);border-radius:10px;padding:10px 12px;margin:10px 0}
+.calc-one h4{margin:0 0 6px;font-size:15px}.calc-sub{margin:8px 0}.calc-sub>b{display:block;margin-bottom:4px}
 .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:10px 0}
 table.doc{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
 table.doc th{background:var(--panel);color:var(--muted);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -450,6 +453,7 @@ function demo3Labels() {
   if (D4) {
     $('gridNote').textContent = '點月份卡片，選這個月要買的 ETF 或個股（每月一檔）。同一檔選幾個月，就占幾份比重。';
     $('search').placeholder = '例：00919、2330、台積電';
+    document.querySelector('label[for=search]').textContent = '搜尋代號或名稱';
     document.querySelector('label[for=goalX]').innerHTML = '每月現金流目標';
     document.querySelector('#retirePanel .sec-title span').textContent = '用股息cover每月開銷';
     document.querySelector('label[for=stockZ]').innerHTML = '目前資產<small>自行輸入，或帶入 APP 內的庫存市值</small>';
@@ -911,7 +915,55 @@ ${inf > 0 ? `含通膨的目標資產：第 t 個月 = Y × (1 + ${goal.inf}%)^(
 當月內依複利曲線推算到哪一天達標 → <em>${fmtDate(res.date)}</em>（還要約 ${res.R.toFixed(1)} 年）${inf > 0 ? `\n退休時每月需要 = ${fmt0(X)} × (1 + ${goal.inf}%)^${res.R.toFixed(2)} = <em>$${fmt0(X * Math.pow(1 + inf, res.R))}</em>` : ''}</div>`;
     } else h += `<p class="note">${esc(res.msg)}</p>`;
   }
+  if (D4) h += calcDetailHtml(Object.keys(cnt));
   box.innerHTML = h;
+}
+// 2026-11-21 DEMO4：六、每一檔的年化報酬率、年化殖利率是怎麼算出來的（資料在資料庫：forecast.cagrP0/P1、calc、stock_calc.json）
+function calcDetailHtml(codes) {
+  const f2 = x => Number(x).toFixed(2), f4 = x => Number(x).toFixed(4), p2 = x => (x * 100).toFixed(2) + '%';
+  const me = ym => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m, 0)); };   // 該月月底
+  const dt = s => { const a = String(s).split('-').map(Number); return new Date(Date.UTC(a[0], (a[1] || 1) - 1, a[2] || 1)); };
+  let h = `<h3>六、每一檔的年化報酬率、年化殖利率是怎麼算的</h3>
+    <div class="formula">年化報酬率 = (終值 ÷ 起值)^(1 ÷ 年數) − 1　起值、終值都是「還原股價」（已把配息、除權加回去）
+年化殖利率 = 保守預估一年配息 ÷ 最新收盤價　保守預估一年配息 = 取「⑤近 3 期單期殖利率中位數推算」與「④近一年實際配息」兩者較小的</div>`;
+  codes.forEach(c => {
+    const f = FC[c] || {}, mt = metricsOf(c, method, DB), cal = (DB.calc || {})[c];
+    h += `<div class="calc-one"><h4><b>${esc(c)}</b> ${esc(NAMES[c] || '')}${f.stock ? '<small>（個股）</small>' : ''}</h4>`;
+    if (mt.reason) { h += `<p class="note">${esc(mt.reason)}，不列入計算。</p></div>`; return; }
+    // 報酬率
+    let r1;
+    if (f.cagr == null) r1 = `<p class="note">上市（資料）未滿 1 年，沒有年化報酬率；這檔不列入預估報酬率 M。</p>`;
+    else if (f.cagrP0 > 0 && f.cagrP1 > 0 && f.cagrFrom && f.cagrTo) {
+      const a = me(f.cagrFrom), b = dt(f.cagrTo), yrs = (b - a) / 86400000 / 365.25, calc = Math.pow(f.cagrP1 / f.cagrP0, 1 / yrs) - 1;
+      r1 = `<div class="tbl-wrap"><table class="doc sm"><tbody>
+        <tr><td>起值（${esc(f.cagrFrom)} 月底的還原月收盤）</td><td class="num">${f2(f.cagrP0)}</td></tr>
+        <tr><td>終值（${esc(f.cagrTo)} 的還原收盤）</td><td class="num">${f2(f.cagrP1)}</td></tr>
+        <tr><td>年數（${a.toISOString().slice(0, 10)} → ${esc(f.cagrTo)}）</td><td class="num">${f2(yrs)} 年</td></tr></tbody></table></div>
+        <div class="formula">年化報酬率 = (${f2(f.cagrP1)} ÷ ${f2(f.cagrP0)})^(1 ÷ ${f2(yrs)}) − 1 = <em>${p2(calc)}</em>${Math.abs(calc - f.cagr) > 0.0006 ? `\n（資料庫存的是 ${p2(f.cagr)}）` : ''}</div>`;
+    } else r1 = `<div class="formula">年化報酬率 <em>${p2(f.cagr)}</em>（${esc(f.cagrFrom || '')} → ${esc(f.cagrTo || '')}）</div><p class="note">起值、終值明細尚未寫入資料庫（重跑 sync_lingxi.py／build_stock_ret.py 後會出現）。</p>`;
+    h += `<div class="calc-sub"><b>年化報酬率</b>${r1}</div>`;
+    // 殖利率
+    let r2;
+    if (!cal) r2 = `<div class="formula">年化殖利率 <em>${mt.y != null ? p2(mt.y) : '—'}</em></div><p class="note">算式明細尚未寫入資料庫（重跑 sync_lingxi.py／fetch_stock_div.py、fetch_otc_div.py 後會出現）。</p>`;
+    else {
+      const n = cal.nPage || cal.n, p5 = cal.p5 || [], p4 = cal.p4 || [];
+      const t5 = p5.length ? `<div class="tbl-wrap"><table class="doc sm"><thead><tr><th>除息日</th><th>現金股利</th><th>除息前收盤</th><th>單期殖利率</th></tr></thead><tbody>${p5.map(x => `<tr><td>${esc(x[0])}</td><td class="num">${f2(x[1])}</td><td class="num">${f2(x[2])}</td><td class="num">${p2(x[3])}</td></tr>`).join('')}</tbody></table></div>` : '';
+      const t4 = p4.length ? `<div class="tbl-wrap"><table class="doc sm"><thead><tr><th>除息日</th><th>當時現金股利</th><th>換算成現在每單位</th></tr></thead><tbody>${p4.map(x => `<tr><td>${esc(x[0])}</td><td class="num">${f2(x[1])}</td><td class="num">${f4(x[3])}${x[2] && x[2] !== 1 ? `<small>（÷ ${f4(x[2])}）</small>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '';
+      const sc = p4.length && p4.length < cal.n ? `\n近一年只有 ${p4.length} 期，不足 ${cal.n} 期，依平均 × ${cal.n} 補足` : '';
+      r2 = `<div class="tbl-wrap"><table class="doc sm"><tbody>
+        <tr><td>一年配息次數</td><td class="num">${n} 次<small>（近 350 天的除息次數歸到 1、2、4、6、12）</small></td></tr>
+        <tr><td>最新收盤價</td><td class="num">${f2(cal.pn)}</td></tr></tbody></table></div>
+        ${p5.length ? `<p class="note">⑤ 近 ${p5.length} 期單期殖利率（現金股利 ÷ 除息前收盤）</p>${t5}
+        <div class="formula">⑤ = 中位數 ${p2(cal.med)} × ${n} 次 × 收盤價 ${f2(cal.pn)} = <em>${f2(cal.k5)}</em></div>` : '<p class="note">⑤ 沒有可用的除息紀錄。</p>'}
+        ${p4.length ? `<p class="note">④ 近 ${cal.win || 365} 天實際配息</p>${t4}` : ''}
+        <div class="formula">④ = ${p4.length ? p4.map(x => f4(x[3])).join(' + ') : '0'} = <em>${f2(cal.t4)}</em>${sc}
+保守預估一年配息 = 取 ⑤ 與 ④ 較小的 = <em>${f2(cal.annual)}</em>（採用 ${esc(cal.src || '')}）
+${cal.note ? esc(cal.note) + '\n' : ''}年化殖利率 = ${f2(cal.annual)} ÷ ${f2(cal.pn)} = <em>${p2(cal.pn > 0 ? cal.annual / cal.pn : 0)}</em></div>
+        ${method !== 'cons' || (mt.y != null && cal.pn > 0 && Math.abs(mt.y - cal.annual / cal.pn) > 0.0005) ? `<p class="note">目前頁面用的殖利率是 ${p2(mt.y)}（${esc(METHOD_NAME[method])}）。</p>` : ''}`;
+    }
+    h += `<div class="calc-sub"><b>年化殖利率</b>${r2}</div></div>`;
+  });
+  return h;
 }
 function renderRetire(r) {
   const box = $('retire');
@@ -1046,8 +1098,7 @@ function quickBtn(c, withName) {
 }
 function quickHtml() {
   if (!D4) return QUICK.filter(c => FC[c]).map(c => quickBtn(c, false)).join('');
-  const grp = (title, list) => { const l = list.filter(c => FC[c]); return l.length ? `<div class="qtitle">${title}</div>` + l.map(c => quickBtn(c, true)).join('') : ''; };
-  return grp('高股息 ETF', QUICK_ETF4) + grp('存股族常見的個股', QUICK_STK4);
+  return [...QUICK_ETF4, ...QUICK_STK4].filter(c => FC[c]).map(c => quickBtn(c, false)).join('');   // 只顯示代號，不分組、不顯示名稱
 }
 function renderPicker() {
   const q = $('search').value.trim().toLowerCase();
@@ -1166,7 +1217,7 @@ function mergeStocks(sd, rd) {
     if (FC[c]) return;                                   // 不蓋掉 ETF
     const v = rd.x[c], pn = v[2];
     if (!(pn > 0)) return;
-    FC[c] = { cagr: v[0], cagrFrom: v[3], cagrTo: rd.base, stock: true };
+    FC[c] = { cagr: v[0], cagrFrom: v[3], cagrTo: v[6] || rd.base, cagrP0: v[4], cagrP1: v[5], stock: true };
     if (v[0] == null) FC[c].exclude = '上市未滿 1 年';
     if ((rd.bad || []).includes(c)) FC[c].exclude = '缺少還原價資料';   // 月 K 與日 K 還原尺度對不上，報酬率不可靠
     NAMES[c] = (sd.sec && sd.sec[c]) || c;
@@ -1187,6 +1238,12 @@ function loadStocks() {
   Promise.all([j(STOCK_URL + '?format=json'), j('stock_ret.json')]).then(([sd, rd]) => {
     const n = mergeStocks(sd, rd);
     if (n) { renderPicker(); render(); }
+    // 算式明細（stock_calc.json）：讀不到只是少了明細，不影響其他功能
+    j('stock_calc.json').then(cd => {
+      DB.calc = DB.calc || {};
+      Object.keys((cd && cd.items) || {}).forEach(c => { if (!DB.calc[c]) DB.calc[c] = cd.items[c]; });
+      render();
+    }).catch(() => {});
   }).catch(() => {});   // 讀不到就維持只有 ETF
 }
 function onFail(e) {
