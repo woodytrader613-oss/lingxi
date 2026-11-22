@@ -451,6 +451,8 @@ const WT = false;   // 占比（%）配置已停用：DEMO3 的年度標的配�
 function demo3Labels() {
   $('d3Trace').hidden = false; $('traceLink').hidden = false;
   if (D4) {
+    // DEMO4 不考慮通膨：說明文字裡含「通膨」的行一律拿掉
+    document.querySelectorAll('.formula').forEach(el => { if (el.innerHTML.indexOf('通膨') >= 0 && !el.id) el.innerHTML = el.innerHTML.split('\n').filter(l => l.indexOf('通膨') < 0).join('\n'); });
     $('gridNote').textContent = '點月份卡片，選這個月要買的 ETF 或個股（每月一檔）。同一檔選幾個月，就占幾份比重。';
     $('search').placeholder = '例：00919、2330、台積電';
     document.querySelector('label[for=search]').textContent = '搜尋代號或名稱';
