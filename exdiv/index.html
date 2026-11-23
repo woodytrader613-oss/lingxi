@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ETF 除息領息總覽｜領息大地圖</title>
-<meta name="description" content="全台股上市櫃 ETF 除息日、領息日、最新股利、殖利率、預估年化殖利率與配息來源一次查詢，可依即將除息、即將領息、殖利率排序。">
+<title>領息大帝國｜ETF 除息日・領息日・殖利率一次查</title>
+<meta name="description" content="領息大帝國：全台股上市櫃 ETF 除息日、領息日、最新股利、殖利率、預估年化殖利率與配息來源一次查詢，可依即將除息、即將領息、殖利率排序。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -112,7 +112,7 @@ table.t{border-collapse:separate;border-spacing:0;font-size:13px;color:var(--ink
 <div class="wrap">
   <header class="top">
     <button class="iconbtn" type="button" id="btnBack" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-    <div class="ttl"><h1>ETF 除息領息總覽</h1><span id="sub">資料載入中…</span></div>
+    <div class="ttl"><h1>領息大帝國</h1><span id="sub">資料載入中…</span></div>
   </header>
   <div class="controls">
     <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">搜尋 ETF</span><input id="q" type="search" placeholder="搜尋代號或名稱，例如 00919" autocomplete="off"></label>
@@ -356,7 +356,7 @@ function onData(j) {
   DATA = j.items; ASOF = j.asof; BASE = dnum(ASOF);
   renderControls(); renderTable(); hideLoader();
   const qc = QS.get('code'); if (qc && DATA.some(x => x.code === qc)) openSheet(qc);
-  postToApp({ type: 'ready', title: 'ETF 除息領息總覽', base: ASOF });
+  postToApp({ type: 'ready', title: '領息大帝國', base: ASOF });
 }
 function onFail(e) {
   const m = String(e && e.message ? e.message : e);
