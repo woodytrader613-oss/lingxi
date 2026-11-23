@@ -60,7 +60,6 @@ table.t{border-collapse:separate;border-spacing:0;font-size:13px;color:var(--ink
 .mh{display:flex;gap:6px}.mh span{width:16px;text-align:center}
 .up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--ink2)}
 .state{padding:40px 16px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
-footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--dim);border-top:1px solid var(--line)}
 /* 明細 */
 .sheet{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;justify-content:flex-end}
 .sheet.open{display:flex}
@@ -77,10 +76,6 @@ footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--di
 .mixgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;font-size:13px}
 .mixgrid div{display:flex;justify-content:space-between}
 .mixgrid i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
-.btns{display:flex;gap:10px}
-.btns button{flex:1;height:46px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
-.btn-o{border:1px solid var(--accent);background:transparent;color:var(--accent)}
-.btn-p{border:0;background:var(--accent);color:#14161A}
 /* 說明 */
 .explain{max-width:860px;margin:0 auto;padding:12px 18px 64px;font-size:14px;line-height:1.75;color:#D5DBE5}
 .explain h2{font-size:20px;margin:28px 0 8px;color:var(--ink)}
@@ -102,7 +97,6 @@ footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--di
 .embed .wrap{padding-top:env(safe-area-inset-top)}
 .embed.embed-header .wrap{padding-top:0}
 .demo1 .calc{display:none}
-.embed footer.foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 @media (min-width:900px){
   header.top{padding:0 16px}
   .controls{flex-direction:row;flex-wrap:wrap;align-items:center}
@@ -119,7 +113,6 @@ footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--di
   <header class="top">
     <button class="iconbtn" type="button" id="btnBack" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
     <div class="ttl"><h1>ETF 除息領息總覽</h1><span id="sub">資料載入中…</span></div>
-    <a class="iconbtn" href="#how" id="howLink" aria-label="計算說明" style="color:var(--ink2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.5"/></svg></a>
   </header>
   <div class="controls">
     <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">搜尋 ETF</span><input id="q" type="search" placeholder="搜尋代號或名稱，例如 00919" autocomplete="off"></label>
@@ -134,7 +127,6 @@ footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--di
     </table>
     <div class="state" id="state">資料載入中…</div>
   </div>
-  <footer class="foot" id="foot">點名稱看明細・左右滑動看更多欄位。除息日標「預估」者為依去年同期推估；預估年化殖利率為保守預估值，張數與成本依此推算，不含稅費。</footer>
 </div>
 
 <article class="explain" id="how">
@@ -169,12 +161,11 @@ const DATA_URL = 'https://script.google.com/macros/s/AKfycbz-ei4NYFNcuLPI4tjwcdi
 
 /* ===== 嵌入模式（APP WebView）=====
    ?embed=1：隱藏網頁標題列；?embed=1&header=1：保留標題列（返回鍵通知 APP 關閉）。
-   網頁 → APP 訊息（JSON）：ready、error、close、remind（設定除息提醒）、addPlan（加入領息配置）。通道與領息大地圖相同。 */
+   網頁 → APP 訊息（JSON）：ready、error、close。通道與領息大地圖相同。 */
 const QS = new URLSearchParams(location.search);
 /* DEMO1（?demo=1）：頁面底下只顯示資料來源，不顯示計算說明與月領試算公式 */
 if (QS.get('demo') === '1') {
   document.documentElement.classList.add('demo1');
-  const a = document.getElementById('howLink'); if (a) a.setAttribute('aria-label', '資料來源');
 }
 if (QS.get('embed') === '1') {
   document.documentElement.classList.add('embed');
@@ -274,7 +265,7 @@ function chgTxt(r) { return r.qnote === '除息' ? '除息' : r.chg == null ? '�
 function renderTable() {
   if (!DATA) return;
   const rows = rowsNow();
-  $('sub').textContent = `資料日期 ${slash(ASOF)} 盤後・顯示 ${rows.length}／${DATA.length} 檔`;
+  $('sub').textContent = `資料日期 ${slash(ASOF)} 盤後`;
   $('tbody').innerHTML = rows.map(r => {
     const months = r.months || [];
     return `<tr>
@@ -322,12 +313,9 @@ function openSheet(code) {
       <div><div class="lbl">預估年化</div><div class="num" style="font-size:16px;color:var(--accent)">${d2(r.est)}%</div></div>
     </div>
     <div class="box"><div class="lbl">本次配息來源${r.mixEx ? `（${slash(r.mixEx)} 除息・每單位 ${r.mixDps} 元）` : ''}</div>${mix}</div>
-    <div class="box" style="font-size:13px;line-height:20px">月領 <b style="color:var(--accent)">${tLabel(S.target)}</b>：${r.lotsN == null ? '沒有預估殖利率，無法推算' : `約需 <b class="num">${r.lotsN.toLocaleString('en-US')}</b> 張，投入約 <b class="num">${r.cost.toFixed(1)}</b> 萬元`}</div>
-    <div class="btns"><button type="button" class="btn-o" id="bRemind">設定除息提醒</button><button type="button" class="btn-p" id="bPlan">加入領息配置</button></div>`;
-  $('bRemind').onclick = () => { if (!postToApp({ type: 'remind', code: r.code, ex: r.ex, exStatus: r.exStatus })) toast('在 APP 內才能設定提醒'); };
-  $('bPlan').onclick = () => { if (!postToApp({ type: 'addPlan', code: r.code })) toast('在 APP 內才能加入配置'); };
+    <div class="box" style="font-size:13px;line-height:20px">月領 <b style="color:var(--accent)">${tLabel(S.target)}</b>：${r.lotsN == null ? '沒有預估殖利率，無法推算' : `約需 <b class="num">${r.lotsN.toLocaleString('en-US')}</b> 張，投入約 <b class="num">${r.cost.toFixed(1)}</b> 萬元`}</div>`;
   $('sheet').classList.add('open'); $('sheet').setAttribute('aria-hidden', 'false');
-  setTimeout(() => { const b = $('bRemind'); if (b) b.focus({ preventScroll: true }); }, 0);
+  setTimeout(() => { const b = $('shBody'); if (b) { b.tabIndex = -1; b.focus({ preventScroll: true }); } }, 0);
 }
 function closeSheet() { $('sheet').classList.remove('open'); $('sheet').setAttribute('aria-hidden', 'true'); S.sel = null; }
 
