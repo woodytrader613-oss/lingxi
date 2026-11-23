@@ -101,6 +101,7 @@ footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--di
 .embed.embed-header header.top{display:flex}
 .embed .wrap{padding-top:env(safe-area-inset-top)}
 .embed.embed-header .wrap{padding-top:0}
+.demo1 .calc{display:none}
 .embed footer.foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 @media (min-width:900px){
   header.top{padding:0 16px}
@@ -118,7 +119,7 @@ footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--di
   <header class="top">
     <button class="iconbtn" type="button" id="btnBack" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
     <div class="ttl"><h1>ETF 除息領息總覽</h1><span id="sub">資料載入中…</span></div>
-    <a class="iconbtn" href="#how" aria-label="計算說明" style="color:var(--ink2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.5"/></svg></a>
+    <a class="iconbtn" href="#how" id="howLink" aria-label="計算說明" style="color:var(--ink2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.5"/></svg></a>
   </header>
   <div class="controls">
     <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">搜尋 ETF</span><input id="q" type="search" placeholder="搜尋代號或名稱，例如 00919" autocomplete="off"></label>
@@ -137,8 +138,8 @@ footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--di
 </div>
 
 <article class="explain" id="how">
-  <h2>計算說明</h2>
-  <ul>
+  <h2 class="calc">計算說明</h2>
+  <ul class="calc">
     <li><b>除息日</b>：已公告優先（證交所 ETF 分配收益、櫃買中心除權除息預告）。標「金額待公告」表示投信已公告除息日但還沒公告金額。還沒公告的，用「去年同一次除息日＋364 天」（同一個星期幾）推估，標「預估」。以 2026 年實際除息日回測，推估誤差 3 天內約 8 成、7 天內約 95%。</li>
     <li><b>領息日</b>：今天之後最早的一次股息發放日。可能屬於上一次除息，會標「屬 M/D 除息」。上櫃預告沒有發放日時，用該檔近幾次「除息到發放」的天數推估，標「預估」。</li>
     <li><b>倒數日</b>：日期減資料日期（日曆天）。</li>
@@ -147,12 +148,12 @@ footer.foot{padding:8px 16px 12px;font-size:11px;line-height:15px;color:var(--di
     <li><b>配息來源</b>：公開資訊觀測站分配收益公告（第二階段）揭露的收益分配組成占比，取最近一次揭露的配息：股利所得、利息所得、收益平準金、已實現資本利得、其他所得。收益平準金占比高，代表該次配息有一部分來自新申購資金，而不是基金的實際收益。</li>
     <li><b>配息方式、1～12 月</b>：證交所 ETF 配息行事曆的除息月份；沒有的用近 400 天實際除息月份。</li>
   </ul>
-  <h3>月領試算</h3>
-  <div class="fm">要買幾張 ＝ 無條件進位（月領目標 × 12 ÷（股價 × 1000 × 預估年化殖利率））
+  <h3 class="calc">月領試算</h3>
+  <div class="fm calc">要買幾張 ＝ 無條件進位（月領目標 × 12 ÷（股價 × 1000 × 預估年化殖利率））
 投入總成本（萬元）＝ 月領目標 × 12 ÷ 預估年化殖利率 ÷ 10000</div>
   <h3>資料來源</h3>
   <p>收盤價：臺灣證券交易所、證券櫃檯買賣中心。配息紀錄：證交所 ETF 分配收益、櫃買中心除權除息資料（已與官方逐筆核對）。配息來源：公開資訊觀測站。每個交易日收盤後更新。</p>
-  <div class="disclaimer">本頁為資訊整理與試算，不構成投資建議。預估值不代表未來實際配息；實際配息以投信公告為準。</div>
+  <div class="disclaimer calc">本頁為資訊整理與試算，不構成投資建議。預估值不代表未來實際配息；實際配息以投信公告為準。</div>
 </article>
 
 <div class="sheet" id="sheet" aria-hidden="true">
@@ -170,6 +171,11 @@ const DATA_URL = 'https://script.google.com/macros/s/AKfycbz-ei4NYFNcuLPI4tjwcdi
    ?embed=1：隱藏網頁標題列；?embed=1&header=1：保留標題列（返回鍵通知 APP 關閉）。
    網頁 → APP 訊息（JSON）：ready、error、close、remind（設定除息提醒）、addPlan（加入領息配置）。通道與領息大地圖相同。 */
 const QS = new URLSearchParams(location.search);
+/* DEMO1（?demo=1）：頁面底下只顯示資料來源，不顯示計算說明與月領試算公式 */
+if (QS.get('demo') === '1') {
+  document.documentElement.classList.add('demo1');
+  const a = document.getElementById('howLink'); if (a) a.setAttribute('aria-label', '資料來源');
+}
 if (QS.get('embed') === '1') {
   document.documentElement.classList.add('embed');
   if (QS.get('header') === '1') document.documentElement.classList.add('embed-header');
@@ -329,7 +335,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('button');
   if (!t) return;
   if (t.dataset.open) return openSheet(t.dataset.open);
-  if (t.dataset.k) { S.sortKey = t.dataset.k; S.dir = +t.dataset.d; }
+  if (t.dataset.k) { S.sortKey = t.dataset.k; S.dir = +t.dataset.d; renderControls(); renderTable(); return scrollToCol(S.sortKey); }
   else if (t.dataset.f) S.freq = t.dataset.f;
   else if (t.dataset.t) { S.target = +t.dataset.t; store.set('exdiv_target', S.target); }
   else if (t.dataset.s) {
@@ -342,6 +348,19 @@ $('q').addEventListener('input', e => { S.q = e.target.value; renderTable(); });
 $('scrim').onclick = closeSheet;
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sel) closeSheet(); });
 $('btnBack').onclick = () => { if (!postToApp({ type: 'close' }) && history.length > 1) history.back(); };
+
+/* 快速排序標籤：表格自動捲到對應欄位（左邊緊貼固定的名稱欄），並回到第一列 */
+function scrollToCol(k) {
+  const box = $('tblbox');
+  const btn = document.querySelector(`#thead button[data-s="${k}"]`);
+  if (!box || !btn) return;
+  const th = btn.closest('th'), stick = document.querySelector('#thead th.stick');
+  const left = Math.max(0, box.scrollLeft + th.getBoundingClientRect().left - box.getBoundingClientRect().left - (stick ? stick.offsetWidth : 0) - 8);
+  const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  box.scrollTo({ left, top: 0, behavior: smooth ? 'smooth' : 'auto' });
+  const tab = document.querySelector(`#tabs button[data-k="${k}"]`);
+  if (tab) tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
 
 function hideLoader() { $('loader').classList.add('done'); }
 function onData(j) {
