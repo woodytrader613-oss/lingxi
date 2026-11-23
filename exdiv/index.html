@@ -16,11 +16,9 @@ button,input{font-family:inherit}
 a{color:var(--accent)}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;min-height:100vh}
-header.top{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;gap:4px;height:56px;padding:0 6px;padding-top:env(safe-area-inset-top)}
-.iconbtn{width:44px;height:44px;border:0;background:transparent;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
-.ttl{flex:1;min-width:0;display:flex;flex-direction:column}
-.ttl h1{margin:0;font-size:18px;line-height:22px;font-weight:700}
-.ttl span{font-size:11px;line-height:14px;color:var(--muted)}
+header.top{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:0 16px;padding-top:env(safe-area-inset-top)}
+header.top h1{margin:0;font-size:18px;line-height:22px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asof{flex:none;font-size:12px;line-height:16px;color:var(--muted);text-align:right;white-space:nowrap}
 .controls{display:flex;flex-direction:column;gap:0}
 .search{margin:0 16px 8px;height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--panel);border-radius:10px;color:var(--muted)}
 .search input{flex:1;min-width:0;height:38px;border:0;outline:none;background:transparent;color:var(--ink);font-size:16px}
@@ -92,13 +90,14 @@ table.t{border-collapse:separate;border-spacing:0;font-size:13px;color:var(--ink
 /* 嵌入模式（APP WebView） */
 .embed,.embed body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .embed input{-webkit-user-select:text;user-select:text}
-.embed header.top{display:none}
-.embed.embed-header header.top{display:flex}
+.embed header.top{min-height:36px}
+.embed header.top h1{visibility:hidden}
+.embed.embed-header header.top{min-height:52px}
+.embed.embed-header header.top h1{visibility:visible}
 .embed .wrap{padding-top:env(safe-area-inset-top)}
 .embed.embed-header .wrap{padding-top:0}
 .demo1 .calc{display:none}
 @media (min-width:900px){
-  header.top{padding:0 16px}
   .controls{flex-direction:row;flex-wrap:wrap;align-items:center}
   .search{flex:1 1 320px;margin:8px 16px}
   .tabs{border-bottom:0;flex:1 1 420px}
@@ -111,8 +110,8 @@ table.t{border-collapse:separate;border-spacing:0;font-size:13px;color:var(--ink
 <div id="loader" role="status" aria-label="載入中"><div class="spin"></div></div>
 <div class="wrap">
   <header class="top">
-    <button class="iconbtn" type="button" id="btnBack" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-    <div class="ttl"><h1>領息大丹狗</h1><span id="sub">資料載入中…</span></div>
+    <h1>領息大丹狗</h1>
+    <span class="asof" id="sub">資料載入中…</span>
   </header>
   <div class="controls">
     <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">搜尋 ETF</span><input id="q" type="search" placeholder="搜尋代號或名稱，例如 00919" autocomplete="off"></label>
@@ -160,8 +159,8 @@ const DATA_URL = 'https://script.google.com/macros/s/AKfycbz-ei4NYFNcuLPI4tjwcdi
 /* ↑↑↑ */
 
 /* ===== 嵌入模式（APP WebView）=====
-   ?embed=1：隱藏網頁標題列；?embed=1&header=1：保留標題列（返回鍵通知 APP 關閉）。
-   網頁 → APP 訊息（JSON）：ready、error、close。通道與領息大地圖相同。 */
+   ?embed=1：隱藏頁面名稱（資料日期仍在右上角）；?embed=1&header=1：顯示頁面名稱。
+   網頁 → APP 訊息（JSON）：ready、error。通道與領息大地圖相同。 */
 const QS = new URLSearchParams(location.search);
 /* DEMO1（?demo=1）：頁面底下只顯示資料來源，不顯示計算說明與月領試算公式 */
 if (QS.get('demo') === '1') {
@@ -335,7 +334,6 @@ document.addEventListener('click', e => {
 $('q').addEventListener('input', e => { S.q = e.target.value; renderTable(); });
 $('scrim').onclick = closeSheet;
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sel) closeSheet(); });
-$('btnBack').onclick = () => { if (!postToApp({ type: 'close' }) && history.length > 1) history.back(); };
 
 /* 快速排序標籤：表格自動捲到對應欄位（左邊緊貼固定的名稱欄），並回到第一列 */
 function scrollToCol(k) {
