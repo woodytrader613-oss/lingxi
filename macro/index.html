@@ -24,6 +24,11 @@ header.top h1{margin:0;font-size:18px;line-height:22px;font-weight:700;min-width
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
 .chip{height:32px;padding:0 14px;border-radius:16px;border:1px solid var(--line2);background:transparent;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#14161A;font-weight:700}
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;min-width:0}
+.seg{display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--panel);flex:none}
+.sbtn{height:28px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.sbtn .s{color:var(--accent);letter-spacing:1px}
+.sbtn[aria-pressed="true"]{background:#2C3038;color:var(--ink)}
 .regime{font-size:12px;color:var(--muted);white-space:nowrap}
 .regime b{color:var(--accent)}
 .tblbox{flex:1;min-height:320px;overflow:auto;border-top:1px solid var(--line);-webkit-overflow-scrolling:touch}
@@ -113,7 +118,10 @@ tr.open .desc .tx{display:block;-webkit-line-clamp:unset}
     <div class="asof" id="sub"></div>
   </header>
   <div class="bar">
-    <div class="chips" id="chips" role="group" aria-label="國別"></div>
+    <div class="filters">
+      <div class="chips" id="chips" role="group" aria-label="國別"></div>
+      <div class="seg" id="stars" role="group" aria-label="重要度"></div>
+    </div>
     <div class="regime" id="regime"></div>
   </div>
   <div class="tblbox" id="tblbox">
@@ -156,7 +164,8 @@ tr.open .desc .tx{display:block;-webkit-line-clamp:unset}
 const DATA_URL = 'https://script.google.com/macros/s/AKfycbwBGACmpSxydR701wwVRDnEOptH7T5jtIZZy2lo7GbhK5wlkcAfn8oh-QKyfcT9dvTP/exec';
 /* 網址參數
    ?embed=1：隱藏頁面名稱（資料日期仍在右上角）；?embed=1&header=1：顯示頁面名稱。
-   ?cc=US：預設只看某國（US、CN、JP、KR、TW）。 */
+   ?cc=US：預設只看某國（US、CN、JP、KR、TW）。
+   ?star=2：預設只看 ★★ 以上；?star=3：只看 ★★★。 */
 const QS = new URLSearchParams(location.search);
 if (QS.get('embed') === '1') {
   document.documentElement.classList.add('embed');
@@ -177,7 +186,8 @@ const CC_ORDER = ['US', 'CN', 'JP', 'KR', 'TW'];
 const WD = ['日', '一', '二', '三', '四', '五', '六'];
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let ROWS = [], STATE = { cc: QS.get('cc') && CC_NAME[QS.get('cc')] ? QS.get('cc') : 'ALL', sort: 'days', dir: 1, open: null };
+const STAR0 = Number(QS.get('star'));
+let ROWS = [], STATE = { cc: QS.get('cc') && CC_NAME[QS.get('cc')] ? QS.get('cc') : 'ALL', star: STAR0 === 2 || STAR0 === 3 ? STAR0 : 1, sort: 'days', dir: 1, open: null };
 
 function taipeiToday() {
   const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -268,7 +278,7 @@ function judgeHtml(r) {
 function stars(n) { return '★'.repeat(n) + '<i>' + '★'.repeat(3 - n) + '</i>'; }
 
 function render() {
-  const list = ROWS.filter((r) => STATE.cc === 'ALL' || r.cc === STATE.cc).slice();
+  const list = ROWS.filter((r) => (STATE.cc === 'ALL' || r.cc === STATE.cc) && r.stars >= STATE.star).slice();
   const dir = STATE.dir;
   if (STATE.sort === 'days') list.sort((a, b) => ((a.days == null ? 9999 : a.days) - (b.days == null ? 9999 : b.days)) * dir || a.ind.order - b.ind.order);
   else list.sort((a, b) => (CC_ORDER.indexOf(a.cc) - CC_ORDER.indexOf(b.cc) || a.ind.order - b.ind.order) * dir);
@@ -286,7 +296,7 @@ function render() {
       + '</tr>';
   }).join('');
   $('state').hidden = list.length > 0;
-  if (!list.length) $('state').textContent = '這個國家目前沒有即將公布的項目。';
+  if (!list.length) $('state').textContent = STATE.star > 1 ? '這個條件下目前沒有即將公布的項目，可以放寬重要度。' : '這個國家目前沒有即將公布的項目。';
   document.querySelectorAll('.ar').forEach((s) => {
     const k = s.dataset.k;
     s.textContent = STATE.sort === k ? (STATE.dir === 1 ? '▲' : '▼') : '⇅';
@@ -298,6 +308,11 @@ function renderChips() {
   const have = CC_ORDER.filter((c) => ROWS.some((r) => r.cc === c));
   if (STATE.cc !== 'ALL' && !have.includes(STATE.cc)) STATE.cc = 'ALL';
   $('chips').innerHTML = ['ALL'].concat(have).map((c) => '<button type="button" class="chip" data-cc="' + c + '" aria-pressed="' + (STATE.cc === c) + '">' + (c === 'ALL' ? '全部' : CC_NAME[c]) + '</button>').join('');
+}
+
+function renderStarSeg() {
+  const opts = [[1, '全部'], [2, '<span class="s">★★</span> 以上'], [3, '<span class="s">★★★</span>']];
+  $('stars').innerHTML = opts.map(([v, t]) => '<button type="button" class="sbtn" data-star="' + v + '" aria-pressed="' + (STATE.star === v) + '" aria-label="' + (v === 1 ? '全部重要度' : (v === 2 ? '兩星以上' : '只看三星')) + '">' + t + '</button>').join('');
 }
 
 function openSheet(r) {
@@ -325,6 +340,8 @@ function onRow(id) {
 document.addEventListener('click', (e) => {
   const chip = e.target.closest('.chip');
   if (chip) { STATE.cc = chip.dataset.cc; STATE.open = null; renderChips(); render(); $('tblbox').scrollTo({ top: 0, left: 0 }); return; }
+  const st = e.target.closest('.sbtn');
+  if (st) { STATE.star = Number(st.dataset.star); STATE.open = null; renderStarSeg(); render(); $('tblbox').scrollTo({ top: 0, left: 0 }); return; }
   const sb = e.target.closest('th button[data-sort]');
   if (sb) { const k = sb.dataset.sort; STATE.dir = STATE.sort === k ? -STATE.dir : 1; STATE.sort = k; render(); return; }
   if (e.target.closest('[data-close]')) { closeSheet(); return; }
@@ -342,6 +359,7 @@ function onData(d) {
   $('sub').textContent = '資料日期 ' + (d.asof || '').replace(/-/g, '/');
   $('regime').innerHTML = d.regime ? '目前市場情境：<b>' + esc(d.regime) + '</b>' : '';
   renderChips();
+  renderStarSeg();
   render();
   $('loader').classList.add('done');
   postApp({ type: 'ready', title: '國際總經月曆', base: d.asof });
