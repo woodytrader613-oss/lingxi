@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>主動ETF持股追蹤</title>
+<meta name="description" content="主動ETF持股追蹤：台股主動式ETF每日持股增減、買賣超排行、股票反查ETF、重倉股排行。">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0E1014;--card:#1A1D23;--line:#22262D;--line2:#3A3F48;--ink:#E6E8EB;--mute:#9AA0A8;--dim:#7E858F;--gold:#F5C542;--up:#FF5C5C;--dn:#2FC56E}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 'Noto Sans TC',system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+a{color:var(--gold);text-decoration:none}
+button{font:inherit;color:inherit}
+.app{max-width:560px;margin:0 auto}
+.num{font-family:'Roboto Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.dn{color:var(--dn)}.fl{color:#C9CDD3}
+.mute{color:var(--mute)}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 6px}
+header.top h1{margin:0;font-size:20px;line-height:26px}
+.sub{font-size:13px;color:var(--mute)}
+.badge{font-size:12px;color:#14161A;background:var(--gold);border-radius:10px;padding:2px 8px;font-weight:700}
+.embed header.top{display:none}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:8px 16px}
+.kpis.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi{background:var(--card);border-radius:12px;padding:10px 11px}
+.kpi .l{font-size:12px;color:var(--mute)}.kpi .v{font-size:19px;font-weight:500;margin-top:2px;white-space:nowrap}.kpi .s{font-size:12px}
+.card{background:var(--card);border-radius:12px;margin:4px 16px 10px;padding:10px 12px}
+.bars{display:flex;flex-direction:column;gap:6px}
+.brow{display:grid;grid-template-columns:62px minmax(0,1fr) 10px minmax(0,1fr) 62px;align-items:center;gap:4px;font-size:13px;cursor:pointer}
+.brow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.brow .r{text-align:right}
+.bar{height:10px;border-radius:2px}
+.tabs{display:flex;gap:20px;padding:0 16px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{height:42px;padding:0 2px;border:0;border-bottom:2px solid transparent;background:none;color:var(--mute);font-weight:500;font-size:15px;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.chips{display:flex;gap:8px;padding:10px 16px 8px;overflow-x:auto}
+.chip{height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--line2);background:none;color:#C9CDD3;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--gold);border-color:var(--gold);color:#14161A}
+.seg{display:flex;gap:4px;margin:0 16px 8px;padding:4px;background:var(--card);border-radius:12px}
+.seg button{flex:1;height:40px;border:0;background:none;color:var(--mute);font-weight:700;font-size:15px;border-radius:8px;cursor:pointer}
+.seg .on.b{background:#3A1E22;color:var(--up)}.seg .on.s{background:#173322;color:var(--dn)}
+.colh{display:flex;justify-content:space-between;padding:6px 16px;font-size:12px;color:var(--dim);border-bottom:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:10px;min-height:62px;padding:8px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:active,.row:hover{background:#161920}
+.grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.t1{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t2{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c{text-align:right;flex:none;white-space:nowrap}
+.idx{width:22px;flex:none;font-size:14px;color:var(--dim)}
+.meter{height:4px;background:var(--line);border-radius:2px;display:flex;margin-top:4px}.meter i{height:4px;border-radius:2px;background:var(--gold)}
+.tag{font-size:11px;padding:1px 5px;border-radius:4px;font-weight:700;margin-left:6px;vertical-align:2px}
+.tag.n{background:var(--up);color:#14161A}.tag.x{background:var(--dn);color:#14161A}
+.search{margin:0 16px 10px;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--card);border-radius:10px;color:var(--mute)}
+.search input{flex:1;height:44px;border:0;outline:none;background:none;color:var(--ink);font-size:17px}
+.ms{display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:8px}.ms span{flex:1;background:var(--line2);border-radius:3px 3px 0 0}.ms span:last-child{background:var(--gold)}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:0;background:none;cursor:pointer}
+select{width:100%;height:44px;border-radius:10px;border:1px solid var(--line2);background:var(--card);color:var(--ink);font-size:16px;padding:0 10px}
+.note{margin:12px 16px 16px;font-size:12px;line-height:18px;color:var(--dim)}
+.empty{padding:40px 16px;text-align:center;color:var(--mute)}
+nav.bot{position:fixed;left:0;right:0;bottom:0;background:#12141A;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:9}
+nav.bot div{max-width:560px;margin:0 auto;display:flex}
+nav.bot button{flex:1;height:58px;border:0;background:none;color:var(--dim);font-size:12px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+nav.bot button.on{color:var(--gold)}
+button:focus-visible,input:focus-visible,select:focus-visible,.row:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div><h1>主動 ETF 持股追蹤</h1><div class="sub" id="asof">資料載入中…</div></div>
+    <span class="badge">DEMO</span>
+  </header>
+  <main id="view"><div class="empty">資料載入中…</div></main>
+</div>
+<nav class="bot" aria-label="主選單"><div>
+  <button data-go="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>總覽</button>
+  <button data-go="rank"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>買賣超</button>
+  <button data-go="lookup"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>反查</button>
+  <button data-go="heavy"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>重倉股</button>
+</div></nav>
+<script>
+{
+const P = new URLSearchParams(location.search);
+const EMBED = P.get('embed') === '1';
+if (EMBED) document.documentElement.classList.add('embed');
+const DATA_URL = P.get('data') || 'data.json';
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (v, d = 2) => v == null || isNaN(v) ? '—' : Math.abs(v).toLocaleString('zh-TW', {minimumFractionDigits: d, maximumFractionDigits: d});
+const sg = (v, d = 2) => v == null || isNaN(v) ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(v, d);
+const cl = v => v > 0 ? 'up' : v < 0 ? 'dn' : 'fl';
+const send = m => { try { if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(m)); else if (parent !== window) parent.postMessage(m, '*'); } catch (e) {} };
+const store = { get(k, d) { try { const v = localStorage.getItem('activeetf_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+                set(k, v) { try { localStorage.setItem('activeetf_' + k, JSON.stringify(v)); } catch (e) {} } };
+const st = { view: 'home', sort: store.get('sort', 'scale'), win: 'd1', side: 'buy', q: store.get('q', '2330'), lsort: 'w', code: null, dtab: 'chg', from: 'home' };
+let D, E = {};
+
+const row = (attrs, inner) => `<div class="row" tabindex="0" ${attrs}>${inner}</div>`;
+const etfName = c => (E[c] && E[c].name) || c;
+
+const V = {
+  home() {
+    const L = D.etfs;
+    const scale = L.reduce((s, e) => s + (e.scale || 0), 0), sc = L.reduce((s, e) => s + (e.scale_chg || 0), 0), net = L.reduce((s, e) => s + (e.net || 0), 0);
+    const add = L.reduce((s, e) => s + e.add, 0), cut = L.reduce((s, e) => s + e.cut, 0);
+    const B = D.rank.d1.buy.slice(0, 5), S = D.rank.d1.sell.slice(0, 5), top = B[0];
+    const mx = Math.max(0.01, ...B.map(x => x[5] || 0), ...S.map(x => -(x[5] || 0)));
+    const bars = Array.from({length: Math.max(B.length, S.length)}, (_, i) => {
+      const b = B[i], s = S[i];
+      return `<div class="brow">${b ? `<span data-stock="${esc(b[0])}">${esc(b[1])}</span><span style="display:flex;justify-content:flex-end"><i class="bar" style="background:var(--up);width:${(b[5] || 0) / mx * 100}%"></i></span>` : '<span></span><span></span>'}<span></span>` +
+        (s ? `<span style="display:flex"><i class="bar" style="background:var(--dn);width:${-(s[5] || 0) / mx * 100}%"></i></span><span class="r" data-stock="${esc(s[0])}">${esc(s[1])}</span>` : '<span></span><span></span>') + '</div>';
+    }).join('');
+    const key = {scale: 'scale', net: 'net', chg: 'chg', prem: 'prem'}[st.sort];
+    const list = L.slice().sort((a, b) => Math.abs(b[key] || 0) - Math.abs(a[key] || 0) || b.scale - a.scale);
+    return `<section class="kpis">
+      <div class="kpi"><div class="l">總規模</div><div class="v num">${fmt(scale / 10000, 2)} 兆</div><div class="s num ${cl(sc)}">${sg(sc, 0)} 億</div></div>
+      <div class="kpi"><div class="l">今日持股淨買賣</div><div class="v num ${cl(net)}">${sg(net, 1)} 億</div><div class="s mute">加碼 ${add}・減碼 ${cut} 檔次</div></div>
+      <div class="kpi"><div class="l">最大買超</div><div class="v" style="font-size:17px;font-weight:700">${top ? esc(top[1]) : '—'}</div><div class="s num up">${top ? sg(top[5]) + ' 億・' + top[6] + ' 檔' : ''}</div></div>
+    </section>
+    <section class="card"><div style="display:flex;justify-content:space-between;font-size:13px" class="mute"><span>今日主動 ETF 買超／賣超（億元）</span><a href="#rank" data-go="rank">看排行 ›</a></div>
+      <div class="bars" style="margin-top:8px">${bars}</div>
+      <div class="num" style="display:flex;justify-content:space-between;font-size:12px;margin-top:6px"><span class="up">${B[0] ? esc(B[0][1]) + ' ' + sg(B[0][5]) : ''}</span><span class="dn">${S[0] ? esc(S[0][1]) + ' ' + sg(S[0][5]) : ''}</span></div></section>
+    <nav class="tabs" aria-label="排序">${[['scale', '規模'], ['net', '持股淨買賣'], ['chg', '漲跌幅'], ['prem', '折溢價']].map(([k, t]) => `<button class="tab ${st.sort === k ? 'on' : ''}" data-sort="${k}">${t}</button>`).join('')}</nav>
+    <div class="colh"><span>ETF</span><span style="display:flex"><span style="width:78px;text-align:right">規模(億)</span><span style="width:78px;text-align:right">淨買賣(億)</span><span style="width:64px;text-align:right">漲跌</span></span></div>
+    ${list.map(e => row(`data-etf="${esc(e.code)}"`, `<div class="grow"><span class="t1">${esc(e.name)}</span><span class="t2 num">${esc(e.code)}・${esc(e.pay || '')}・${e.h.length} 檔</span></div>
+      <span class="c num" style="width:78px">${fmt(e.scale, 1)}</span><span class="c num ${cl(e.net)}" style="width:78px">${e.net ? sg(e.net) : '0.00'}</span><span class="c num ${cl(e.chg)}" style="width:64px">${sg(e.chg)}%</span>`)).join('')}`;
+  },
+  rank() {
+    const L = (D.rank[st.win] || {})[st.side] || [];
+    return `<div class="chips">${[['d1', '當日'], ['d5', '5 日'], ['d10', '10 日'], ['d20', '20 日'], ['d60', '60 日']].map(([k, t]) => `<button class="chip ${st.win === k ? 'on' : ''}" data-win="${k}">${t}</button>`).join('')}</div>
+    <div class="seg"><button class="${st.side === 'buy' ? 'on b' : ''}" data-side="buy">買超</button><button class="${st.side === 'sell' ? 'on s' : ''}" data-side="sell">賣超</button></div>
+    <div class="colh"><span>股票・主要買賣的 ETF</span><span style="display:flex"><span style="width:76px;text-align:right">張數</span><span style="width:70px;text-align:right">估值(億)</span></span></div>
+    ${L.length ? L.map((x, i) => row(`data-stock="${esc(x[0])}"`, `<span class="idx num">${i + 1}</span><div class="grow"><span class="t1">${esc(x[1])} <span class="num mute" style="font-size:13px;font-weight:400">${esc(x[0])}</span> <span class="num ${cl(x[3])}" style="font-size:13px;font-weight:400">${sg(x[3])}%</span></span>
+      <span class="t2">${x[6]} 檔 ETF・${x[7].map(y => esc(y[0]) + ' ' + sg(y[1], 0) + ' 張').join('、')}</span></div>
+      <span class="c num ${cl(x[4])}" style="width:76px">${sg(x[4], 0)}</span><span class="c num ${cl(x[5])}" style="width:70px;font-size:16px;font-weight:500">${sg(x[5])}</span>`)).join('') : '<div class="empty">這個期間沒有資料</div>'}
+    <p class="note">張數＝各主動 ETF 持股增減淨額；估值＝張數 × 當日均價。含申購買回造成的增減，不等於投信實際委託成交，也不是官方三大法人數字。</p>`;
+  },
+  lookup() {
+    const qs = st.q.split(/[\s,，、]+/).filter(Boolean).slice(0, 3);
+    const codes = qs.map(q => D.stocks[q] ? q : Object.keys(D.stocks).find(k => D.stocks[k][0] === q || D.stocks[k][0].replace('*', '') === q)).filter(Boolean);
+    let body = '<div class="empty">輸入股票代號或名稱，例：2330 2454</div>';
+    if (qs.length && !codes.length) body = '<div class="empty">主動 ETF 目前沒有持有這檔股票</div>';
+    if (codes.length) {
+      const S = codes.map(c => D.stocks[c]);
+      const head = S.map((s, i) => { const hs = s[5], d1 = hs.reduce((a, h) => a + h[3], 0), al = hs.reduce((a, h) => a + h[2], 0);
+        return `<section class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span><b style="font-size:20px">${esc(s[0])}</b> <span class="num mute">${esc(codes[i])}</span></span><span><span class="num" style="font-size:20px">${s[1] == null ? '—' : Number(s[1]).toLocaleString('zh-TW', {maximumFractionDigits: 2})}</span> <span class="num ${cl(s[2])}">${sg(s[2])}%</span></span></div>
+        <div class="kpis" style="padding:8px 0 0"><div><div class="l mute" style="font-size:12px">持有 ETF</div><div class="num" style="font-size:17px">${s[3]} 檔</div><div class="mute" style="font-size:12px">主動 ${hs.length} 檔</div></div>
+        <div><div class="mute" style="font-size:12px">ETF 合計張數</div><div class="num" style="font-size:17px">${fmt(s[4], 0)}</div><div class="mute" style="font-size:12px">主動 ${fmt(al, 0)}</div></div>
+        <div><div class="mute" style="font-size:12px">主動今日增減</div><div class="num ${cl(d1)}" style="font-size:17px">${sg(d1, 0)} 張</div></div></div></section>`; }).join('');
+      let rows = S[0][5].filter(h => S.every(s => s[5].some(x => x[0] === h[0]))).map(h => {
+        const per = S.map(s => s[5].find(x => x[0] === h[0]));
+        return {etf: h[0], w: per.reduce((a, x) => a + x[1], 0), lots: per[0][2], d1: per[0][3], per};
+      });
+      const k = st.lsort; rows.sort((a, b) => (k === 'w' ? b.w - a.w : k === 'lots' ? b.lots - a.lots : b.d1 - a.d1) || b.w - a.w);
+      const wmax = Math.max(0.01, ...rows.map(r => r.w));
+      body = head + `<div style="display:flex;align-items:center;gap:8px;padding:0 16px 8px;flex-wrap:wrap"><span class="mute" style="font-size:13px">${codes.length > 1 ? '同時持有的主動 ETF ' + rows.length + ' 檔' : '持有的主動 ETF ' + rows.length + ' 檔'}</span>
+        ${[['w', codes.length > 1 ? '合計權重' : '權重'], ['lots', '張數'], ['d1', '今日增減']].map(([v, t]) => `<button class="chip ${st.lsort === v ? 'on' : ''}" data-lsort="${v}" style="height:34px">${t}</button>`).join('')}</div>` +
+        (rows.length ? rows.map(r => row(`data-etf="${esc(r.etf)}"`, `<div class="grow"><span class="t1">${esc(etfName(r.etf))}</span><span class="t2 num">${esc(r.etf)}・${codes.length > 1 ? r.per.map((x, i) => esc(S[i][0]) + ' ' + fmt(x[1]) + '%').join('、') : fmt(r.lots, 0) + ' 張'}</span></div>
+          <div class="c" style="width:96px"><span class="num">${fmt(r.w)}%</span><div class="meter"><i style="width:${r.w / wmax * 100}%"></i></div></div>
+          <span class="c num ${cl(r.d1)}" style="width:62px">${codes.length > 1 ? '' : sg(r.d1, 0)}</span>`)).join('') : '<div class="empty">沒有同時持有這幾檔的主動 ETF</div>');
+    }
+    return `<div style="padding:10px 0 0"><label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" value="${esc(st.q)}" placeholder="例：2330 2454" inputmode="search" aria-label="股票代號或名稱"></label></div>${body}`;
+  },
+  heavy() {
+    const R = Object.entries(D.stocks).map(([c, s]) => { const lots = s[5].reduce((a, h) => a + h[2], 0);
+      return {c, n: s[0], p: s[1], chg: s[2], k: s[5].length, lots, v: lots * 1000 * (s[1] || 0) / 1e8, d1: s[5].reduce((a, h) => a + h[3], 0)}; })
+      .sort((a, b) => b.v - a.v).slice(0, 50);
+    const tot = R.slice(0, 15).reduce((a, x) => a + x.v, 0), vmax = R[0] ? R[0].v : 1;
+    return `<section class="card" style="margin-top:10px;display:flex;justify-content:space-between;align-items:center"><span><div class="mute" style="font-size:12px">前 15 檔合計持有市值</div><div class="num" style="font-size:22px">${fmt(tot, 1)} 億</div></span>
+      <span style="text-align:right"><div class="mute" style="font-size:12px">${R[0] ? esc(R[0].n) : ''}占前 15 名</div><div class="num" style="font-size:22px;color:var(--gold)">${R[0] ? fmt(R[0].v / tot * 100, 1) : '—'}%</div></span></section>
+    <div class="colh"><span>股票・持有主動 ETF 檔數</span><span style="display:flex"><span style="width:104px;text-align:right">持有市值(億)</span><span style="width:62px;text-align:right">今日(張)</span></span></div>
+    ${R.map((x, i) => row(`data-stock="${esc(x.c)}"`, `<span class="idx num">${i + 1}</span><div class="grow"><span class="t1">${esc(x.n)} <span class="num mute" style="font-size:13px;font-weight:400">${esc(x.c)}</span></span><span class="t2 num">${x.k} 檔・${fmt(x.lots, 0)} 張・<span class="${cl(x.chg)}">${sg(x.chg)}%</span></span></div>
+      <div class="c" style="width:104px"><span class="num">${fmt(x.v, 1)}</span><div class="meter" style="justify-content:flex-end"><i style="width:${x.v / vmax * 100}%"></i></div></div><span class="c num ${cl(x.d1)}" style="width:62px">${sg(x.d1, 0)}</span>`)).join('')}
+    <p class="note">持有市值＝主動 ETF 合計張數 × 收盤。</p>`;
+  },
+  etf() {
+    const e = E[st.code] || D.etfs[0]; st.code = e.code;
+    const ms = e.ms || [], mx = Math.max(1, ...ms.map(m => m[1]));
+    const chg = e.h.filter(h => h[4]).sort((a, b) => (b[5] || 0) - (a[5] || 0));
+    const H = st.dtab === 'chg' ? chg : e.h, wmax = Math.max(0.01, ...e.h.map(h => h[3] || 0));
+    const ym = s => String(s).replace(/(\d{4})(\d\d)/, '$1/$2');
+    return `<div style="display:flex;align-items:center;gap:4px;padding:6px 6px 0"><button class="back" data-back aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="grow"><span style="font-size:19px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.name)}</span><span class="t2 num" style="font-size:13px">${esc(e.code)}・${esc(e.pay || '')}・經理人 ${esc(e.mgr || '—')}</span></div></div>
+    <div style="padding:6px 16px 8px"><select id="pick" aria-label="切換 ETF">${D.etfs.map(x => `<option value="${esc(x.code)}" ${x.code === e.code ? 'selected' : ''}>${esc(x.code)} ${esc(x.name)}</option>`).join('')}</select></div>
+    <section class="kpis two" style="padding-top:0">
+      <div class="kpi"><div class="l">收盤・折溢價 ${sg(e.prem)}%</div><div class="v"><span class="num">${fmt(e.price)}</span> <span class="num ${cl(e.chg)}" style="font-size:14px">${sg(e.chg)}%</span></div></div>
+      <div class="kpi"><div class="l">規模（日變化 <span class="num ${cl(e.scale_chg)}">${sg(e.scale_chg, 1)}</span>）</div><div class="v num">${fmt(e.scale, 1)} 億</div></div>
+      <div class="kpi"><div class="l">今日持股淨買賣</div><div class="v num ${cl(e.net)}">${sg(e.net)} 億</div><div class="s mute">加碼 ${e.add}・減碼 ${e.cut}</div></div>
+      <div class="kpi"><div class="l">今年以來含息・近 1 月</div><div class="v"><span class="num ${cl(e.ret[0])}">${sg(e.ret[0], 1)}%</span> <span class="num ${cl(e.ret[1])}" style="font-size:14px">${sg(e.ret[1], 1)}%</span></div></div>
+    </section>
+    ${ms.length ? `<section class="card"><div class="mute" style="display:flex;justify-content:space-between;font-size:12px"><span>月底規模（億）</span><span class="num">${ym(ms[0][0])} → ${ym(ms[ms.length - 1][0])}</span></div>
+      <div class="ms">${ms.map(m => `<span style="height:${m[1] / mx * 100}%" title="${esc(ym(m[0]))} ${fmt(m[1], 1)} 億"></span>`).join('')}</div></section>` : ''}
+    <nav class="tabs"><button class="tab ${st.dtab === 'chg' ? 'on' : ''}" data-dtab="chg">今日異動 ${chg.length}</button><button class="tab ${st.dtab === 'all' ? 'on' : ''}" data-dtab="all">全部持股 ${e.h.length}</button></nav>
+    ${H.length ? H.map((h, i) => row(`data-stock="${esc(h[0])}"`, st.dtab === 'chg'
+      ? `<div class="grow"><span class="t1">${esc(h[1])} <span class="num mute" style="font-size:13px;font-weight:400">${esc(h[0])}</span>${h[7] === 1 ? '<span class="tag n">新進</span>' : h[7] === 2 ? '<span class="tag x">出清</span>' : ''}</span><span class="t2 num">權重 ${fmt(h[3])}%・持有 ${fmt(h[2], 0)} 張</span></div>
+         <span class="c num ${cl(h[4])}" style="width:90px">${sg(h[4], 0)} 張</span><span class="c num ${cl(h[5])}" style="width:72px;font-weight:500">${sg(h[5])}</span>`
+      : `<span class="idx num">${i + 1}</span><div class="grow"><span class="t1">${esc(h[1])}</span><span class="t2 num">${esc(h[0])}・${fmt(h[2], 0)} 張・${fmt(h[6], 1)} 億${h[4] ? `・<span class="${cl(h[4])}">今日 ${sg(h[4], 0)}</span>` : ''}</span></div>
+         <div class="c" style="width:88px"><span class="num">${fmt(h[3])}%</span><div class="meter"><i style="width:${(h[3] || 0) / wmax * 100}%"></i></div></div>`)).join('')
+      : '<div class="empty">今天沒有異動</div>'}`;
+  }
+};
+
+const render = () => {
+  document.querySelectorAll('nav.bot button').forEach(b => b.classList.toggle('on', b.dataset.go === (st.view === 'etf' ? st.from : st.view)));
+  $('#view').innerHTML = V[st.view]();
+};
+const go = (v, push = true) => {
+  if (v !== 'etf') st.from = v;
+  st.view = v;
+  const h = '#' + (v === 'etf' ? 'etf-' + st.code : v);
+  if (push && location.hash !== h) history.pushState(null, '', h);
+  render(); scrollTo(0, 0);
+};
+const fromHash = () => {
+  const h = location.hash.slice(1);
+  if (h.startsWith('etf-')) { st.code = h.slice(4); st.view = 'etf'; }
+  else st.view = V[h] && h !== 'etf' ? h : 'home';
+  render();
+};
+
+document.addEventListener('click', ev => {
+  const t = ev.target, q = s => t.closest(s);
+  let el;
+  if ((el = q('[data-go]'))) { ev.preventDefault(); go(el.dataset.go); return; }
+  if ((el = q('[data-sort]'))) { st.sort = el.dataset.sort; store.set('sort', st.sort); render(); return; }
+  if ((el = q('[data-win]'))) { st.win = el.dataset.win; render(); return; }
+  if ((el = q('[data-side]'))) { st.side = el.dataset.side; render(); return; }
+  if ((el = q('[data-lsort]'))) { st.lsort = el.dataset.lsort; render(); return; }
+  if ((el = q('[data-dtab]'))) { st.dtab = el.dataset.dtab; render(); return; }
+  if ((el = q('[data-back]'))) { if (history.length > 1 && location.hash.startsWith('#etf-')) history.back(); else go(st.from); return; }
+  if ((el = q('[data-etf]'))) { st.code = el.dataset.etf; st.dtab = 'chg'; go('etf'); return; }
+  if ((el = q('[data-stock]'))) { st.q = el.dataset.stock; store.set('q', st.q); go('lookup'); }
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.classList.contains('row')) ev.target.click(); });
+document.addEventListener('input', ev => {
+  if (ev.target.id !== 'q') return;
+  const pos = ev.target.selectionStart; st.q = ev.target.value; store.set('q', st.q); render();
+  const n = $('#q'); n.focus(); n.setSelectionRange(pos, pos);
+});
+document.addEventListener('change', ev => { if (ev.target.id === 'pick') { st.code = ev.target.value; go('etf'); } });
+addEventListener('popstate', fromHash);
+
+fetch(DATA_URL + (DATA_URL.includes('?') ? '&' : '?') + 't=' + Math.floor(Date.now() / 600000), {cache: 'no-cache'})
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(j => {
+    if (!j || !Array.isArray(j.etfs) || !j.etfs.length) throw new Error('資料是空的');
+    D = j; E = Object.fromEntries(D.etfs.map(e => [e.code, e]));
+    $('#asof').textContent = `資料日期 ${D.asof} 盤後・${D.updated[0] ?? D.etfs.length}/${D.updated[1] ?? D.etfs.length} 檔已更新`;
+    const code = (P.get('code') || '').toUpperCase();
+    if (code && E[code]) { st.code = code; st.view = 'etf'; history.replaceState(null, '', '#etf-' + code); render(); }
+    else fromHash();
+    send({type: 'ready', title: '主動ETF持股追蹤', asof: D.asof});
+  })
+  .catch(err => {
+    $('#asof').textContent = '資料讀取失敗';
+    $('#view').innerHTML = `<div class="empty">資料讀取失敗，請稍後再試。<br><span style="font-size:12px">${esc(err.message)}</span></div>`;
+    send({type: 'error', message: String(err.message)});
+  });
+}
+</script>
+</body>
+</html>
