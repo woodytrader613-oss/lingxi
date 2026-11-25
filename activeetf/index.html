@@ -19,11 +19,9 @@ button{font:inherit;color:inherit}
 .num{font-family:'Roboto Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .up{color:var(--up)}.dn{color:var(--dn)}.fl{color:#C9CDD3}
 .mute{color:var(--mute)}
-header.top{display:flex;align-items:flex-end;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 6px}
-header.top h1{margin:0;font-size:20px;line-height:26px}
+header.top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 16px 4px}
 .sub{font-size:13px;color:var(--mute)}
 .badge{font-size:12px;color:#14161A;background:var(--gold);border-radius:10px;padding:2px 8px;font-weight:700}
-.embed header.top{display:none}
 .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:8px 16px}
 .kpis.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .kpi{background:var(--card);border-radius:12px;padding:10px 11px}
@@ -70,7 +68,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.row:focus-visible
 <body>
 <div class="app">
   <header class="top">
-    <div><h1>主動 ETF 持股追蹤</h1><div class="sub" id="asof">資料載入中…</div></div>
+    <div class="sub" id="asof">資料載入中…</div>
     <span class="badge">DEMO</span>
   </header>
   <main id="view"><div class="empty">資料載入中…</div></main>
